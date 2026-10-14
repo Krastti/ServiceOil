@@ -1,6 +1,7 @@
 package ru.krastti.entity;
 
 import jakarta.persistence.*;
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
 import lombok.AccessLevel;
@@ -14,7 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RegionalPriceId implements Serializable {
 
-    // TODO Warning:(17, 31) 'serialVersionUID' can be annotated with '@Serial' annotation
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Column(name = "source_id", length = 64, nullable = false)

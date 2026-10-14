@@ -25,25 +25,40 @@ import ru.krastti.entity.PersistenceValues.*;
 public class RegionalPriceEntity {
     @EmbeddedId
     private RegionalPriceId id;
-    @MapsId("sourceId") @ManyToOne(fetch = FetchType.LAZY, optional = false)
+
+    @MapsId("sourceId")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "source_id", nullable = false)
     private DataSourceEntity source;
-    @MapsId("regionCode") @ManyToOne(fetch = FetchType.LAZY, optional = false)
+
+    @MapsId("regionCode")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "region_code", nullable = false)
     private RegionEntity region;
-    @MapsId("fuelCode") @ManyToOne(fetch = FetchType.LAZY, optional = false)
+
+    @MapsId("fuelCode")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "fuel_code", nullable = false)
     private FuelTypeEntity fuel;
-    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 16)
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
     private Frequency frequency;
+
     @Column(nullable = false, precision = 18, scale = 6)
     private BigDecimal price;
-    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 3)
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 3)
     private Currency currency;
-    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 16)
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
     private Unit unit;
+
     @Column(name = "source_url", nullable = false, length = 2000)
     private String sourceUrl;
+
     @Column(name = "imported_at", nullable = false)
     private OffsetDateTime importedAt;
 

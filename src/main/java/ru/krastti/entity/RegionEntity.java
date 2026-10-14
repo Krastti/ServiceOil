@@ -15,8 +15,11 @@ import lombok.AccessLevel;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RegionEntity {
-    @Id @Column(length = 16)
+
+    @Id
+    @Column(length = 16)
     private String code;
+
     @Column(nullable = false, length = 200)
     private String name;
 

@@ -1,0 +1,13 @@
+**
+!Dockerfile
+!pom.xml
+!src/
+!src/**
+!data/
+!data/rosstat-regional.csv
+!postman/
+!postman/specs/
+!postman/specs/serviceoil.openapi.yaml
+!postman/collections/
+!postman/collections/ServiceOil/
+!postman/collections/ServiceOil/**
