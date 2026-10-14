@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RegionalPriceId implements Serializable {
 
+    // TODO Warning:(17, 31) 'serialVersionUID' can be annotated with '@Serial' annotation
     private static final long serialVersionUID = 1L;
 
     @Column(name = "source_id", length = 64, nullable = false)
