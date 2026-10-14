@@ -1,8 +1,12 @@
 HELP.md
 target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+data
+docs
+postman
+reports
+scripts
 
 ### STS ###
 .apt_generated
@@ -18,6 +22,8 @@ target/
 *.iws
 *.iml
 *.ipr
+.mvn
+.postman
 
 ### NetBeans ###
 /nbproject/private/
@@ -31,3 +37,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local ServiceOil state ###
+.cache/
+.env
+*.log
