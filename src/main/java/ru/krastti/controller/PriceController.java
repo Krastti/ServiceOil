@@ -6,32 +6,29 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import ru.krastti.entity.dto.*;
 import ru.krastti.service.PriceService;
-import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class PriceController {
     private final PriceService service;
-
-
-    @GetMapping("/catalog")
-    public Catalog catalog(@RequestParam(defaultValue="ROSSTAT_PFO") String sourceId) { return service.catalog(sourceId); }
-    @GetMapping("/prices/history")
-    public History history(@RequestParam(defaultValue="ROSSTAT_PFO") String sourceId,@RequestParam String regionId,
-                           @RequestParam String fuelCode,@RequestParam LocalDate from,@RequestParam LocalDate to) {
-        return service.history(sourceId,regionId,fuelCode,from,to);
+    
+    @PostMapping("/catalog")
+    public CatalogResponseDTO catalog(@Valid @RequestBody CatalogRequestDTO request) {
+        return service.catalog(request.sourceId());
     }
-    @GetMapping("/prices/summary")
-    public Summary summary(@RequestParam(defaultValue="ROSSTAT_PFO") String sourceId,@RequestParam String regionId,
-                           @RequestParam String fuelCode,@RequestParam LocalDate from,@RequestParam LocalDate to) {
-        return service.summary(sourceId,regionId,fuelCode,from,to);
+    @PostMapping("/prices/history")
+    public HistoryResponseDTO history(@Valid @RequestBody PricePeriodRequestDTO request) {
+        return service.history(request.sourceId(),request.regionId(),request.fuelCode(),request.from(),request.to());
     }
-    @GetMapping("/prices/compare")
-    public Compare compare(@RequestParam(defaultValue="ROSSTAT_PFO") String sourceId,@RequestParam String regionA,@RequestParam String regionB,
-                           @RequestParam String fuelCode,@RequestParam LocalDate from,@RequestParam LocalDate to) {
-        return service.compare(sourceId,regionA,regionB,fuelCode,from,to);
+    @PostMapping("/prices/summary")
+    public SummaryResponseDTO summary(@Valid @RequestBody PricePeriodRequestDTO request) {
+        return service.summary(request.sourceId(),request.regionId(),request.fuelCode(),request.from(),request.to());
+    }
+    @PostMapping("/prices/compare")
+    public CompareResponseDTO compare(@Valid @RequestBody CompareRequestDTO request) {
+        return service.compare(request.sourceId(),request.regionA(),request.regionB(),request.fuelCode(),request.from(),request.to());
     }
     @PostMapping("/refueling/estimate")
-    public Estimate estimate(@Valid @RequestBody EstimateRequest request) { return service.estimate(request); }
+    public EstimateResponseDTO estimate(@Valid @RequestBody EstimateRequestDTO request) { return service.estimate(request); }
 }

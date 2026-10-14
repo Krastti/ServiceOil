@@ -17,6 +17,6 @@ import java.time.LocalDate;
  * @param sourceUrl ссылка на исходные данные цены
  * @param comparison расчёт для другого региона; null, если сравнение не запрошено
  */
-public record Estimate(Metadata metadata, String regionId, String fuelCode, LocalDate priceDate,
+public record EstimateResponseDTO(Metadata metadata, String regionId, String fuelCode, LocalDate priceDate,
                        BigDecimal totalLiters, BigDecimal pricePerLiter, BigDecimal estimatedCost,
                        String sourceUrl, BudgetComparison comparison) {}

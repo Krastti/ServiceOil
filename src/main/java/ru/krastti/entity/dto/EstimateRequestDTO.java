@@ -23,7 +23,7 @@ import java.util.List;
  * @param volumeLiters объём закупки в литрах; null при расчёте по технике
  * @param vehicles от 1 до 100 строк техники; null при заданном объёме закупки
  */
-public record EstimateRequest(String sourceId, @NotBlank String regionId, @NotBlank String fuelCode,
+public record EstimateRequestDTO(String sourceId, @NotBlank String regionId, @NotBlank String fuelCode,
                               @NotNull LocalDate priceDate, String comparisonRegionId,
                               @DecimalMin(value="0",inclusive=false) @DecimalMax("1000000") BigDecimal volumeLiters,
                               @Size(min=1,max=100) List<@NotNull @Valid Vehicle> vehicles) {}

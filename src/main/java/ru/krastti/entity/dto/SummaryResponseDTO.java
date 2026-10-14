@@ -19,5 +19,5 @@ import java.time.LocalDate;
  * @param delta последняя цена минус первая, рубли за литр; null при числе точек меньше двух
  * @param deltaPercent изменение относительно первой цены в процентах с двумя знаками; null при числе точек меньше двух
  */
-public record Summary(Metadata metadata, String regionId, String fuelCode, LocalDate from, LocalDate to,
+public record SummaryResponseDTO(Metadata metadata, String regionId, String fuelCode, LocalDate from, LocalDate to,
                       int pointCount, BigDecimal price, LocalDate firstDate, LocalDate lastDate, BigDecimal delta, BigDecimal deltaPercent) {}

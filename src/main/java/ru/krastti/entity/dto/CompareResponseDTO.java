@@ -19,6 +19,6 @@ import java.util.List;
  * @param comparison сравнение на последней общей дате; null, если общих дат нет
  * @param warnings предупреждения, относящиеся к сравнению
  */
-public record Compare(Metadata metadata, String regionA, String regionB, String fuelCode, LocalDate from, LocalDate to,
+public record CompareResponseDTO(Metadata metadata, String regionA, String regionB, String fuelCode, LocalDate from, LocalDate to,
                       List<PricePoint> historyA, List<PricePoint> historyB, List<LocalDate> commonDates,
                       Comparison comparison, List<String> warnings) {}

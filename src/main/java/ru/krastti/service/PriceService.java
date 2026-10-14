@@ -26,25 +26,25 @@ public class PriceService {
     private final RegionalPriceRepository prices;
 
 
-    public Catalog catalog(String source) {
-        return new Catalog(metadata(source),prices.findRegions(source),prices.findFuels(source),prices.findAvailability(source));
+    public CatalogResponseDTO catalog(String source) {
+        return new CatalogResponseDTO(metadata(source),prices.findRegions(source),prices.findFuels(source),prices.findAvailability(source));
     }
-    public History history(String source,String region,String fuel,LocalDate from,LocalDate to) {
+    public HistoryResponseDTO history(String source,String region,String fuel,LocalDate from,LocalDate to) {
         validatePeriod(from,to);
         var meta=metadata(source);
         requireCombination(source,region,fuel);
-        return new History(meta,region,fuel,from,to,points(source,region,fuel,from,to));
+        return new HistoryResponseDTO(meta,region,fuel,from,to,points(source,region,fuel,from,to));
     }
-    public Summary summary(String source,String region,String fuel,LocalDate from,LocalDate to) {
+    public SummaryResponseDTO summary(String source,String region,String fuel,LocalDate from,LocalDate to) {
         var h=history(source,region,fuel,from,to);
         var points=h.points();
-        if(points.isEmpty()) return new Summary(h.metadata(),region,fuel,from,to,0,null,null,null,null,null);
+        if(points.isEmpty()) return new SummaryResponseDTO(h.metadata(),region,fuel,from,to,0,null,null,null,null,null);
         var first=points.getFirst(); var last=points.getLast();
         var delta=points.size()<2?null:last.price().subtract(first.price());
         var percent=delta==null?null:delta.multiply(new BigDecimal("100")).divide(first.price(),2,RoundingMode.HALF_UP);
-        return new Summary(h.metadata(),region,fuel,from,to,points.size(),last.price(),first.date(),last.date(),delta,percent);
+        return new SummaryResponseDTO(h.metadata(),region,fuel,from,to,points.size(),last.price(),first.date(),last.date(),delta,percent);
     }
-    public Compare compare(String source,String a,String b,String fuel,LocalDate from,LocalDate to) {
+    public CompareResponseDTO compare(String source,String a,String b,String fuel,LocalDate from,LocalDate to) {
         var ha=history(source,a,fuel,from,to); var hb=history(source,b,fuel,from,to);
         var byDate=new HashMap<LocalDate,PricePoint>(); hb.points().forEach(p->byDate.put(p.date(),p));
         var dates=new ArrayList<LocalDate>(); Comparison comparison=null;
@@ -53,9 +53,9 @@ public class PriceService {
             if(other!=null) { dates.add(point.date()); comparison=new Comparison(point.date(),point.price(),other.price(),point.price().subtract(other.price())); }
         }
         var warnings=dates.isEmpty()?List.of("Общие даты отсутствуют. Числовое сравнение недоступно."):List.<String>of();
-        return new Compare(ha.metadata(),a,b,fuel,from,to,ha.points(),hb.points(),dates,comparison,warnings);
+        return new CompareResponseDTO(ha.metadata(),a,b,fuel,from,to,ha.points(),hb.points(),dates,comparison,warnings);
     }
-    public Estimate estimate(EstimateRequest request) {
+    public EstimateResponseDTO estimate(EstimateRequestDTO request) {
         String source=request.sourceId()==null?"ROSSTAT_PFO":request.sourceId();
         var meta=metadata(source);
         var liters=totalLiters(request);
@@ -67,7 +67,7 @@ public class PriceService {
             var otherCost=cost(liters,other.price());
             comparison=new BudgetComparison(request.comparisonRegionId(),other.price(),otherCost,cost.subtract(otherCost));
         }
-        return new Estimate(meta,request.regionId(),request.fuelCode(),point.date(),liters,point.price(),cost,point.sourceUrl(),comparison);
+        return new EstimateResponseDTO(meta,request.regionId(),request.fuelCode(),point.date(),liters,point.price(),cost,point.sourceUrl(),comparison);
     }
     private PricePoint exact(String source,String region,String fuel,LocalDate date) {
         requireCombination(source,region,fuel);
@@ -75,7 +75,7 @@ public class PriceService {
         if(points.isEmpty()) throw new PriceNotFoundException();
         return points.getFirst();
     }
-    public static BigDecimal totalLiters(EstimateRequest request) {
+    public static BigDecimal totalLiters(EstimateRequestDTO request) {
         if((request.volumeLiters()==null)==(request.vehicles()==null)) bad("Укажите либо объём закупки, либо технику.");
         BigDecimal total=request.volumeLiters();
         if(request.vehicles()!=null) {

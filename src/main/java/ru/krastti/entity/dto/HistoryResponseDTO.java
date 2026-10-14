@@ -14,4 +14,4 @@ import java.util.List;
  * @param to конец запрошенного периода включительно
  * @param points наблюдения по возрастанию даты; пустой список, если в периоде нет цен
  */
-public record History(Metadata metadata, String regionId, String fuelCode, LocalDate from, LocalDate to, List<PricePoint> points) {}
+public record HistoryResponseDTO(Metadata metadata, String regionId, String fuelCode, LocalDate from, LocalDate to, List<PricePoint> points) {}
