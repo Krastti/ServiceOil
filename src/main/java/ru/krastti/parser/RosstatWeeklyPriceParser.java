@@ -16,9 +16,10 @@ import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.parser.ParserDelegator;
+import ru.krastti.entity.dto.RosstatPriceRow;
 
 /** Разбирает недельную HTML-публикацию Росстата с ценами по регионам ПФО. */
-@SuppressWarnings({"unused", "SpellCheckingInspection"})
+@SuppressWarnings({"unused"})
 public final class RosstatWeeklyPriceParser {
     private static final int MAX_HTML_LENGTH = 10_000_000;
     private static final Pattern PRICE = Pattern.compile("\\d+(?:[,.]\\d+)?");
@@ -27,24 +28,15 @@ public final class RosstatWeeklyPriceParser {
                     + "\\s+на\\s+(\\d{1,2})\\s+([\\p{L}]+)\\s+(\\d{4})\\s+(?:года|г\\.)");
     private static final Map<String, Region> PFO_REGIONS = pfoRegions();
 
-    /** Нормализованная цена, готовая к сериализации во внутренний CSV ServiceOil. */
-    public record PriceRow(
-            String regionCode,
-            String regionName,
-            String fuelCode,
-            LocalDate observedOn,
-            BigDecimal price,
-            String sourceUrl) {}
-
     /** Извлекает цены АИ-92 и дизельного топлива для распознанных субъектов ПФО. */
-    public List<PriceRow> parse(String html, URI sourceUri) {
+    public List<RosstatPriceRow> parse(String html, URI sourceUri) {
         require(html != null && !html.isBlank() && html.length() <= MAX_HTML_LENGTH);
         validateSourceUri(sourceUri);
 
         var document = readHtml(html);
         var observedOn = readObservedOn(document.text());
         var table = findPriceTable(document.tables());
-        var result = new LinkedHashMap<String, PriceRow>();
+        var result = new LinkedHashMap<String, RosstatPriceRow>();
 
         for (var cells : table.rows()) {
             if (cells.size() < 2) continue;
@@ -68,7 +60,7 @@ public final class RosstatWeeklyPriceParser {
     }
 
     /** Сериализует результат в CSV, который принимает CsvImportService. */
-    public String toCsv(List<PriceRow> rows) {
+    public String toCsv(List<RosstatPriceRow> rows) {
         require(rows != null && !rows.isEmpty());
         var csv = new StringBuilder(
                 "region_code,region_name,fuel_code,observed_on,frequency,price,currency,unit,source_url\n");
@@ -83,14 +75,16 @@ public final class RosstatWeeklyPriceParser {
         return csv.toString();
     }
 
-    private static void add(Map<String, PriceRow> result, Region region, String fuelCode,
+    /** Добавляет цену региона, отклоняя недопустимые значения и повторяющиеся записи. */
+    private static void add(Map<String, RosstatPriceRow> result, Region region, String fuelCode,
                             LocalDate observedOn, BigDecimal price, URI sourceUri) {
         require(price.signum() > 0 && price.scale() <= 6);
-        var row = new PriceRow(region.code(), region.name(), fuelCode, observedOn, price, sourceUri.toString());
+        var row = new RosstatPriceRow(region.code(), region.name(), fuelCode, observedOn, price, sourceUri.toString());
         var key = region.code() + ':' + fuelCode;
         require(result.putIfAbsent(key, row) == null);
     }
 
+    /** Разбирает HTML и собирает его текст и содержимое таблиц. */
     private static HtmlDocument readHtml(String html) {
         var callback = new TableCollector();
         try {
@@ -101,6 +95,7 @@ public final class RosstatWeeklyPriceParser {
         return new HtmlDocument(callback.text.toString(), List.copyOf(callback.tables));
     }
 
+    /** Извлекает дату наблюдения из заголовка публикации. */
     private static LocalDate readObservedOn(String text) {
         var matcher = DATE.matcher(normalize(text));
         require(matcher.find());
@@ -110,6 +105,7 @@ public final class RosstatWeeklyPriceParser {
         return LocalDate.of(year, month, day);
     }
 
+    /** Преобразует русское название месяца в значение {@link Month}. */
     private static Month russianMonth(String value) {
         return switch (value.toLowerCase(Locale.ROOT)) {
             case "января" -> Month.JANUARY;
@@ -128,6 +124,7 @@ public final class RosstatWeeklyPriceParser {
         };
     }
 
+    /** Находит таблицу с ценами на АИ-92 и дизельное топливо по регионам ПФО. */
     private static Table findPriceTable(List<Table> tables) {
         for (var table : tables) {
             var beginning = table.rows().stream().limit(8).flatMap(List::stream)
@@ -142,6 +139,7 @@ public final class RosstatWeeklyPriceParser {
         throw new IllegalArgumentException("В публикации Росстата не найдена таблица региональных цен");
     }
 
+    /** Проверяет, что ссылка на исходную публикацию ведёт по HTTPS на домен Росстата. */
     private static void validateSourceUri(URI uri) {
         require(uri != null && "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null
                 && uri.getUserInfo() == null);
@@ -149,10 +147,12 @@ public final class RosstatWeeklyPriceParser {
         require(host.equals("rosstat.gov.ru") || host.endsWith(".rosstat.gov.ru"));
     }
 
+    /** Сводит пробелы и неразрывные пробелы к единому виду. */
     private static String normalize(String value) {
         return value.replace('\u00a0', ' ').replaceAll("\\s+", " ").trim();
     }
 
+    /** Экранирует CSV-поле, если в нём есть запятая, кавычка или перевод строки. */
     private static String csvField(String value) {
         if (value.indexOf(',') < 0 && value.indexOf('"') < 0 && value.indexOf('\n') < 0 && value.indexOf('\r') < 0) {
             return value;
@@ -160,6 +160,7 @@ public final class RosstatWeeklyPriceParser {
         return '"' + value.replace("\"", "\"\"") + '"';
     }
 
+    /** Создаёт справочник регионов ПФО с вариантами названий из публикаций. */
     private static Map<String, Region> pfoRegions() {
         var regions = new LinkedHashMap<String, Region>();
         addRegion(regions, "02", "Республика Башкортостан", "Республика Башкортостан");
@@ -179,16 +180,23 @@ public final class RosstatWeeklyPriceParser {
         return Map.copyOf(regions);
     }
 
+    /** Добавляет регион в справочник по всем указанным вариантам его названия. */
     private static void addRegion(Map<String, Region> regions, String code, String name, String... aliases) {
         for (var alias : aliases) regions.put(normalize(alias), new Region(code, name));
     }
 
+    /** Прерывает разбор, если данные публикации не соответствуют ожидаемым ограничениям. */
     private static void require(boolean condition) {
         if (!condition) throw new IllegalArgumentException("Публикация Росстата не соответствует ожидаемому формату");
     }
 
+    /** Канонический код и название региона, используемые внутри парсера. */
     private record Region(String code, String name) {}
+
+    /** Строки и ячейки одной HTML-таблицы. */
     private record Table(List<List<String>> rows) {}
+
+    /** Текст публикации и извлечённые из неё таблицы. */
     private record HtmlDocument(String text, List<Table> tables) {}
 
     private static final class TableCollector extends HTMLEditorKit.ParserCallback {
@@ -198,6 +206,7 @@ public final class RosstatWeeklyPriceParser {
         private List<String> row;
         private StringBuilder cell;
 
+        /** Начинает сбор содержимого таблицы, строки, ячейки или переноса строки. */
         @Override
         public void handleStartTag(HTML.Tag tag, MutableAttributeSet attributes, int position) {
             if (tag == HTML.Tag.TABLE) tableRows = new ArrayList<>();
@@ -206,17 +215,20 @@ public final class RosstatWeeklyPriceParser {
             else if (tag == HTML.Tag.BR && cell != null) cell.append(' ');
         }
 
+        /** Обрабатывает одиночные HTML-теги, сохраняя переносы внутри ячейки. */
         @Override
         public void handleSimpleTag(HTML.Tag tag, MutableAttributeSet attributes, int position) {
             if (tag == HTML.Tag.BR && cell != null) cell.append(' ');
         }
 
+        /** Добавляет текст в общий текст публикации и в текущую ячейку таблицы. */
         @Override
         public void handleText(char[] data, int position) {
             text.append(data).append(' ');
             if (cell != null) cell.append(data);
         }
 
+        /** Завершает текущую ячейку, строку или таблицу и сохраняет её содержимое. */
         @Override
         public void handleEndTag(HTML.Tag tag, int position) {
             if ((tag == HTML.Tag.TD || tag == HTML.Tag.TH) && cell != null && row != null) {
