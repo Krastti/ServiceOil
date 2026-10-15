@@ -1,4 +1,6 @@
 HELP.md
+README-template.md
+AGENTS.md
 target/
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -41,4 +43,5 @@ build/
 ### Local ServiceOil state ###
 .cache/
 .env
+.env.*
 *.log
