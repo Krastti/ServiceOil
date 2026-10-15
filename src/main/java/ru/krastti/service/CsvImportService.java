@@ -27,7 +27,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class CsvImportService {
-    private final JpaImportWriter writer;
+    private final PriceImportService writer;
     private final ImportFailureJournal failures;
 
     /**

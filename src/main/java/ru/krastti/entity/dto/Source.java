@@ -6,7 +6,7 @@ package ru.krastti.entity.dto;
  *
  * @param id идентификатор источника
  * @param name название источника
- * @param dataMode режим данных: OPEN_DATA, DEMO или BENZUP
+ * @param dataMode режим данных: OPEN_DATA или DEMO
  * @param methodology описание методики формирования данных
  */
 public record Source(String id, String name, String dataMode, String methodology) {}

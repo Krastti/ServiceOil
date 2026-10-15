@@ -10,7 +10,7 @@ import ru.krastti.entity.PersistenceValues.DataMode;
 /**
  * Таблица {@code data_source} хранит сведения об источниках цен на топливо.
  * Каждая запись содержит идентификатор и название источника, режим данных
- * ({@code OPEN_DATA}, {@code DEMO} или {@code BENZUP}), описание методики
+ * ({@code OPEN_DATA} или {@code DEMO}), описание методики
  * и время последнего импорта. На источник ссылаются записи таблицы {@code regional_price}.
  */
 @Entity

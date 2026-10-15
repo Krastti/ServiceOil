@@ -8,7 +8,7 @@ import java.util.List;
  *
  * @param source идентификатор источника
  * @param sourceName название источника
- * @param dataMode режим данных: OPEN_DATA, DEMO или BENZUP
+ * @param dataMode режим данных: OPEN_DATA или DEMO
  * @param unit единица объёма; сейчас LITER
  * @param currency валюта цены; сейчас RUB
  * @param frequency периодичность наблюдений; null, если у источника нет цен
