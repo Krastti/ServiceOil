@@ -7,6 +7,7 @@ import ru.krastti.entity.CsvColumn;
 import static ru.krastti.entity.CsvColumn.*;
 import ru.krastti.exception.InvalidImportException;
 import ru.krastti.exception.ImportJournalUnavailableException;
+import ru.krastti.entity.dto.Row;
 
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.stereotype.Service;
@@ -29,21 +30,31 @@ public class CsvImportService {
     private final JpaImportWriter writer;
     private final ImportFailureJournal failures;
 
-
-    record Row(String region, String name, String fuel, LocalDate date, String frequency,
-               BigDecimal price, String url) {}
-
     /**
      * Проверяет CSV и вызывает отдельную транзакцию записи.
      * Перехват снаружи proxy writer охватывает ошибки flush и commit.
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public int importFile(Path file, Source source) {
+        return performImport(source, () -> Files.readString(file, StandardCharsets.UTF_8));
+    }
+
+    /** Импортирует уже сформированный CSV через ту же проверку и транзакционную запись, что и файл. */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public int importCsv(String csv, Source source) {
+        return performImport(source, () -> csv);
+    }
+
+    /**
+     * Проверяет источник и CSV, затем передает строки на запись.
+     * При сбое фиксирует попытку в журнале отдельной транзакцией и выбрасывает ошибку импорта.
+     */
+    private int performImport(Source source, CsvContent content) {
         var started = OffsetDateTime.now(ZoneOffset.UTC);
         int[] rejected = {0};
         try {
             validateSource(source);
-            var rows = read(file, rejected);
+            var rows = read(content.read(), rejected);
             writer.write(source, rows, started);
             return rows.size();
         } catch (Exception exception) {
@@ -57,42 +68,73 @@ public class CsvImportService {
             throw new InvalidImportException();
         }
     }
-    private static void validateSource(Source source) {
-        require(source != null && source.id() != null && source.id().matches("[A-Za-z0-9_-]{1,64}"));
-        require(source.name() != null && !source.name().isBlank() && source.name().length() <= 200);
-        require(Set.of("OPEN_DATA", "DEMO", "BENZUP").contains(source.dataMode()));
-        require(source.methodology() != null && !source.methodology().isBlank() && source.methodology().length() <= 2000);
+
+    @FunctionalInterface
+    private interface CsvContent {
+        String read() throws Exception;
     }
 
-    private static List<Row> read(Path file, int[] rejected) throws Exception {
-        require(Files.size(file) <= 10_000_000);
-        var records = parseCsv(Files.readString(file, StandardCharsets.UTF_8));
+    /** Проверяет обязательные поля источника перед импортом. */
+    private static void validateSource(Source source) {
+        require(source != null);
+        require(source.id() != null && source.id().matches("[A-Za-z0-9_-]{1,64}"));
+        require(hasTextWithinLimit(source.name(), 200));
+        require(Set.of("OPEN_DATA", "DEMO").contains(source.dataMode()));
+        require(hasTextWithinLimit(source.methodology(), 2000));
+    }
+
+    /** Проверяет, что строка задана, не пустая и не превышает лимит длины. */
+    private static boolean hasTextWithinLimit(String value, int maxLength) {
+        return value != null && !value.isBlank() && value.length() <= maxLength;
+    }
+
+    /** Проверяет структуру CSV и преобразует записи в DTO строк цены. */
+    private static List<Row> read(String csv, int[] rejected) {
+        require(csv != null && csv.getBytes(StandardCharsets.UTF_8).length <= 10_000_000);
+        var records = parseCsv(csv);
         require(!records.isEmpty() && records.removeFirst().equals(CsvColumn.headers()));
         require(!records.isEmpty());
+
         var rows = new ArrayList<Row>();
         var keys = new HashSet<String>();
-        var frequencies = new HashSet<String>();
         for (var fields : records) {
             try {
-                require(fields.size() == CsvColumn.values().length && fields.stream().noneMatch(String::isBlank));
-                require(REGION_CODE.read(fields).matches("[0-9]{1,16}") && REGION_NAME.read(fields).length() <= 200);
-                require(Set.of("AI92", "DIESEL").contains(FUEL_CODE.read(fields)));
-                var date = LocalDate.parse(OBSERVED_ON.read(fields));
-                require(!date.isAfter(LocalDate.now(ZoneOffset.UTC)));
-                require(Set.of("DAILY", "WEEKLY", "MONTHLY").contains(FREQUENCY.read(fields)));
-                if (FREQUENCY.read(fields).equals("MONTHLY")) require(date.equals(date.withDayOfMonth(date.lengthOfMonth())));
-                var price = new BigDecimal(PRICE.read(fields));
-                require(price.signum() > 0 && price.scale() <= 6 && price.precision() - price.scale() <= 12);
-                require(CURRENCY.read(fields).equals("RUB") && UNIT.read(fields).equals("LITER"));
-                var uri = URI.create(SOURCE_URL.read(fields));
-                require("https".equals(uri.getScheme()) && uri.getHost() != null && uri.getUserInfo() == null && SOURCE_URL.read(fields).length() <= 2000);
-                require(keys.add(REGION_CODE.read(fields) + ":" + FUEL_CODE.read(fields) + ":" + date));
-                frequencies.add(FREQUENCY.read(fields));
-                rows.add(new Row(REGION_CODE.read(fields), REGION_NAME.read(fields), FUEL_CODE.read(fields), date, FREQUENCY.read(fields), price, SOURCE_URL.read(fields)));
-            } catch (RuntimeException exception) { rejected[0]++; }
+                rows.add(readRow(fields, keys));
+            } catch (RuntimeException exception) {
+                rejected[0]++;
+            }
         }
-        require(rejected[0] == 0 && frequencies.size() == 1);
+        require(rejected[0] == 0);
         return rows;
+    }
+
+    /** Проверяет одну CSV-запись и создает DTO строки цены. */
+    private static Row readRow(List<String> fields, Set<String> keys) {
+        require(fields.size() == CsvColumn.values().length && fields.stream().noneMatch(String::isBlank));
+
+        var regionCode = REGION_CODE.read(fields);
+        var regionName = REGION_NAME.read(fields);
+        var fuelCode = FUEL_CODE.read(fields);
+        var observedOn = LocalDate.parse(OBSERVED_ON.read(fields));
+        var frequency = FREQUENCY.read(fields);
+        var price = new BigDecimal(PRICE.read(fields));
+        var currency = CURRENCY.read(fields);
+        var unit = UNIT.read(fields);
+        var sourceUrl = SOURCE_URL.read(fields);
+
+        require(regionCode.matches("[0-9]{1,16}") && regionName.length() <= 200);
+        require(Set.of("AI92", "DIESEL").contains(fuelCode));
+        require(!observedOn.isAfter(LocalDate.now(ZoneOffset.UTC)));
+        require(frequency.equals("WEEKLY"));
+        require(price.signum() > 0 && price.scale() <= 6 && price.precision() - price.scale() <= 12);
+        require(currency.equals("RUB") && unit.equals("LITER"));
+
+        var uri = URI.create(sourceUrl);
+        require("https".equals(uri.getScheme()) && uri.getHost() != null
+                && uri.getUserInfo() == null && sourceUrl.length() <= 2000);
+        require(keys.add(regionCode + ":" + fuelCode + ":" + observedOn));
+
+        return new Row(regionCode, regionName, fuelCode, observedOn, frequency, price, sourceUrl);
     }
 
     static List<List<String>> parseCsv(String input) {

@@ -10,8 +10,6 @@ import ru.krastti.service.PriceService;
 /**
  * HTTP API просмотра региональных цен на топливо и расчёта бюджета заправки.
  * Все операции принимают POST-запросы с JSON-телом по базовому пути {@code /api/v1}.
- * Входные DTO проверяются через {@link Valid}, а обработка данных делегируется
- * {@link PriceService}.
  */
 @RestController
 @RequestMapping("/api/v1")
