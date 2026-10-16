@@ -3,20 +3,31 @@ WORKDIR /workspace
 COPY pom.xml ./
 COPY src/main ./src/main
 RUN --mount=type=cache,target=/maven-cache \
-    mvn -B -ntp -Dmaven.repo.local=/maven-cache -Dmaven.test.skip=true package
+    mvn -B -ntp -Dmaven.repo.local=/maven-cache -Dmaven.test.skip=true package \
+    && mkdir -p /root/.m2/repository \
+    && cp -a /maven-cache/. /root/.m2/repository/
 
 FROM build AS tests
+COPY src/test ./src/test
 ENTRYPOINT ["mvn", "-B", "-ntp"]
 CMD ["test"]
 
-FROM build AS postman
+FROM tests AS postman
 # Official CLI installer; cloud login and publishing are not part of verification.
 RUN curl -fsSL https://dl-cli.pstmn.io/install/unix.sh -o /tmp/install-postman.sh \
     && sh /tmp/install-postman.sh --prefix /opt/postman --no-modify-path \
     && rm /tmp/install-postman.sh
 COPY postman/specs/serviceoil.openapi.yaml ./postman/specs/serviceoil.openapi.yaml
 COPY postman/collections/ServiceOil ./postman/collections/ServiceOil
+COPY postman/collections/ServiceOilRosstat ./postman/collections/ServiceOilRosstat
+COPY postman/mocks/rosstat ./postman/mocks/rosstat
+COPY postman/simulations/rosstat.sim.yaml ./postman/simulations/rosstat.sim.yaml
 ENTRYPOINT ["/opt/postman/bin/postman"]
+
+FROM postman AS integration-tests
+ENV PATH="/opt/postman/bin:${PATH}"
+ENTRYPOINT ["mvn", "-B", "-ntp"]
+CMD ["test"]
 
 FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /app
@@ -34,3 +45,6 @@ RUN test "$(openssl x509 -in /tmp/russian-trusted-root-ca.pem -noout -fingerprin
 USER 10001:10001
 EXPOSE 8080
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=70", "-jar", "/app/serviceoil.jar"]
+
+FROM runtime AS test-runtime
+COPY src/test/resources/contract-weekly.csv ./data/contract-weekly.csv

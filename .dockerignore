@@ -14,3 +14,10 @@
 !postman/collections/
 !postman/collections/ServiceOil/
 !postman/collections/ServiceOil/**
+!postman/collections/ServiceOilRosstat/
+!postman/collections/ServiceOilRosstat/**
+!postman/mocks/
+!postman/mocks/rosstat/
+!postman/mocks/rosstat/**
+!postman/simulations/
+!postman/simulations/rosstat.sim.yaml
