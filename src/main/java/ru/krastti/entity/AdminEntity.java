@@ -22,4 +22,10 @@ public class AdminEntity {
 
     @Column(nullable = false)
     private boolean enabled;
+
+    /** Меняет логин и, если передан, уже закодированный пароль. */
+    public void changeCredentials(String username, String encodedPassword) {
+        this.username = username;
+        if (encodedPassword != null) this.passwordHash = encodedPassword;
+    }
 }

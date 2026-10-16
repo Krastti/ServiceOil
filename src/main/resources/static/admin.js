@@ -1,7 +1,7 @@
 'use strict';
 
 (() => {
-  let busy = false, imported = false, templateBusy = false;
+  let busy = false, imported = false, templateBusy = false, accountBusy = false;
   const get = id => document.getElementById(id);
   const feedback = (text, type) => {
     get('import-feedback').textContent = text;
@@ -15,6 +15,7 @@
     get('admin-login-item').hidden = value.authenticated;
     get('admin-import-item').hidden = !value.authenticated;
     get('admin-logout-item').hidden = !value.authenticated;
+    get('admin-account-item').hidden = !value.authenticated;
     get('add-vehicle-template').hidden = !value.authenticated;
     get('admin-name').textContent = value.username || '';
     get('logout-csrf').value = value.csrfToken;
@@ -107,6 +108,63 @@
       templateBusy = false;
       get('template-submit').disabled = false;
       document.querySelectorAll('.template-close').forEach(button => button.disabled = false);
+    }
+  });
+  const validatePasswords = () => {
+    const password = get('account-new-password'), confirmation = get('account-confirm-password');
+    password.setCustomValidity(password.value && new TextEncoder().encode(password.value).length > 72
+      ? 'Новый пароль должен занимать не более 72 байт в UTF-8.' : '');
+    confirmation.setCustomValidity(password.value !== confirmation.value ? 'Пароли не совпадают.' : '');
+  };
+  ['account-new-password', 'account-confirm-password'].forEach(id => get(id).addEventListener('input', validatePasswords));
+  $('#admin-account-modal').on('show.bs.modal', () => {
+    get('admin-account-form').reset();
+    get('account-username').value = get('admin-name').textContent;
+    get('account-feedback').hidden = true;
+    get('account-login-link').hidden = true;
+    validatePasswords();
+  });
+  $('#admin-account-modal').on('hide.bs.modal', event => { if (accountBusy) event.preventDefault(); });
+  $('#admin-account-modal').on('hidden.bs.modal', () => { get('admin-account-form').reset(); validatePasswords(); });
+  get('admin-account-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (accountBusy) return;
+    validatePasswords();
+    if (!get('admin-account-form').reportValidity()) return;
+    const body = { username: get('account-username').value.trim(), currentPassword: get('account-current-password').value };
+    if (get('account-new-password').value) body.newPassword = get('account-new-password').value;
+    const feedback = (text, type) => {
+      get('account-feedback').textContent = text;
+      get('account-feedback').className = 'alert mb-0 alert-' + type;
+      get('account-feedback').hidden = false;
+    };
+    accountBusy = true;
+    get('account-submit').disabled = true;
+    document.querySelectorAll('.account-close').forEach(button => button.disabled = true);
+    get('account-login-link').hidden = true;
+    feedback('Сохраняем реквизиты…', 'info');
+    try {
+      const auth = await session();
+      if (!auth.authenticated) { get('account-login-link').hidden = false; throw Error('Сессия завершена. Войдите снова.'); }
+      const response = await fetch('/api/v1/admin/account', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', [auth.csrfHeader]: auth.csrfToken },
+        body: JSON.stringify(body)
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        if (response.status === 401) { get('account-login-link').hidden = false; await session(); }
+        throw Error(result.message || 'Не удалось изменить реквизиты.');
+      }
+      get('admin-account-form').reset();
+      location.replace('/login?changed');
+    } catch (error) {
+      feedback(error.message || 'Не удалось получить ответ. Попробуйте войти с новыми реквизитами.', 'danger');
+      get('account-current-password').value = '';
+    } finally {
+      accountBusy = false;
+      get('account-submit').disabled = false;
+      document.querySelectorAll('.account-close').forEach(button => button.disabled = false);
     }
   });
   session().catch(() => { /* Публичный просмотр цен доступен и при ошибке проверки сессии. */ });

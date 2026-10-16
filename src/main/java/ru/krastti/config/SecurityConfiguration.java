@@ -15,6 +15,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 /** Вход по форме, серверная сессия и CSRF-защита административных изменений. */
 @Configuration
@@ -24,7 +27,13 @@ public class SecurityConfiguration {
     PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SessionRegistry sessionRegistry() { return new SessionRegistryImpl(); }
+
+    @Bean
+    HttpSessionEventPublisher httpSessionEventPublisher() { return new HttpSessionEventPublisher(); }
+
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http, SessionRegistry sessions) throws Exception {
         RequestMatcher adminApi = request -> request.getRequestURI().startsWith(request.getContextPath() + "/api/v1/admin/");
         return http
                 .authorizeHttpRequests(auth -> auth
@@ -34,6 +43,14 @@ public class SecurityConfiguration {
                 .formLogin(form -> form.loginPage("/login").loginProcessingUrl("/login")
                         .defaultSuccessUrl("/admin", true).failureUrl("/login?error").permitAll())
                 .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/"))
+                .sessionManagement(session -> session.maximumSessions(-1).sessionRegistry(sessions)
+                        .expiredSessionStrategy(event -> {
+                            if (adminApi.matches(event.getRequest())) {
+                                error(event.getResponse(), 401, "ADMIN_UNAUTHORIZED", "Сессия завершена. Войдите снова.");
+                            } else {
+                                event.getResponse().sendRedirect(event.getRequest().getContextPath() + "/login?changed");
+                            }
+                        }))
                 // Эти POST-операции только читают данные и не используют административную сессию.
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/catalog", "/api/v1/prices/history",
                         "/api/v1/prices/summary", "/api/v1/prices/compare", "/api/v1/refueling/estimate",

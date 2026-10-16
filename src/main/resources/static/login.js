@@ -2,6 +2,11 @@
 
 (async () => {
   const message = document.getElementById('login-message');
+  if (new URLSearchParams(location.search).has('changed')) {
+    message.textContent = 'Реквизиты учётной записи изменены. Войдите с новым логином и паролем.';
+    message.className = 'alert alert-success';
+    message.hidden = false;
+  }
   if (new URLSearchParams(location.search).has('error')) {
     message.textContent = 'Неверный логин или пароль. Проверьте данные и повторите вход.';
     message.hidden = false;

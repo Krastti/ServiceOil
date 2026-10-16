@@ -47,6 +47,11 @@ public class ApiErrorHandler {
     @ExceptionHandler({MethodArgumentNotValidException.class,HttpMessageNotReadableException.class,
             MissingServletRequestParameterException.class,MethodArgumentTypeMismatchException.class})
     public ResponseEntity<ErrorResponseDTO> invalid(Exception exception) {
+        if (exception instanceof MethodArgumentNotValidException invalid
+                && invalid.getBindingResult().getTarget() instanceof ru.krastti.entity.dto.AdminAccountRequestDTO) {
+            return ResponseEntity.badRequest().body(new ErrorResponseDTO("INVALID_REQUEST",
+                    "Проверьте логин (3–64 символа), текущий пароль и новый пароль (от 8 символов, если указан)."));
+        }
         return ResponseEntity.badRequest().body(new ErrorResponseDTO("INVALID_REQUEST","Проверьте поля запроса, даты, объём, остаток и целое количество техники от 1 до 1000."));
     }
 

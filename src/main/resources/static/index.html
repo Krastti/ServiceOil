@@ -15,7 +15,7 @@
   <script src="vendor/jquery-easing/jquery.easing.min.js" defer></script>
   <script src="vendor/sb-admin-2/js/sb-admin-2.min.js" defer></script>
   <script src="app.js?v=2.2.0" defer></script>
-  <script src="admin.js?v=3.1.0" defer></script>
+  <script src="admin.js?v=3.2.0" defer></script>
 </head>
 <body id="page-top">
   <a class="skip-link" href="#main-content">Перейти к содержимому</a>
@@ -34,6 +34,7 @@
         <li class="sidebar-heading">Администрирование</li>
         <li class="nav-item" id="admin-login-item"><a class="nav-link" href="/login"><i class="fas fa-fw fa-user-lock" aria-hidden="true"></i><span>Вход администратора</span></a></li>
         <li class="nav-item" id="admin-import-item" hidden><button class="nav-link sidebar-action" type="button" id="open-import" data-toggle="modal" data-target="#rosstat-import-modal"><i class="fas fa-fw fa-file-import" aria-hidden="true"></i><span>Ручной импорт</span></button></li>
+        <li class="nav-item" id="admin-account-item" hidden><button class="nav-link sidebar-action" type="button" data-toggle="modal" data-target="#admin-account-modal"><i class="fas fa-fw fa-user-cog" aria-hidden="true"></i><span>Логин и пароль</span></button></li>
         <li class="nav-item" id="admin-logout-item" hidden><form action="/logout" method="post" id="admin-logout-form"><input type="hidden" name="_csrf" id="logout-csrf"><button class="nav-link sidebar-action" type="submit"><i class="fas fa-fw fa-sign-out-alt" aria-hidden="true"></i><span>Выйти · <span id="admin-name"></span></span></button></form></li>
         <li class="nav-divider"><hr class="sidebar-divider"></li>
         <li class="sidebar-note mx-3 mb-4"><i class="fas fa-seedling mb-3" aria-hidden="true"></i><p class="mb-1 text-white font-weight-bold">Расходы под контролем</p><p class="mb-0">Оцените бюджет топлива для вашего хозяйства.</p></li>
@@ -150,6 +151,23 @@
           <a id="template-login-link" class="d-inline-block mt-3" href="/login" hidden>Войти снова</a>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light template-close" data-dismiss="modal">Закрыть</button><button type="submit" id="template-submit" class="btn btn-primary">Сохранить шаблон</button></div>
+      </form>
+    </div></div>
+  </div>
+  <div class="modal fade" id="admin-account-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="account-title" aria-describedby="account-description">
+    <div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content">
+      <div class="modal-header"><h2 class="modal-title h5" id="account-title">Логин и пароль</h2><button type="button" class="close account-close" data-dismiss="modal" aria-label="Закрыть"><span aria-hidden="true">&times;</span></button></div>
+      <form id="admin-account-form">
+        <div class="modal-body">
+          <p class="small text-gray-600" id="account-description">Подтвердите изменения текущим паролем. После сохранения все сессии завершатся: войдите с новыми реквизитами.</p>
+          <div class="form-group"><label for="account-username">Логин</label><input id="account-username" name="username" class="form-control" autocomplete="username" minlength="3" maxlength="64" required aria-describedby="account-username-note"><small id="account-username-note" class="form-text text-gray-600">3–64 символа: буквы, цифры, точка, дефис или подчёркивание.</small></div>
+          <div class="form-group"><label for="account-current-password">Текущий пароль</label><input id="account-current-password" name="currentPassword" class="form-control" type="password" autocomplete="current-password" maxlength="256" required></div>
+          <div class="form-group"><label for="account-new-password">Новый пароль</label><input id="account-new-password" name="newPassword" class="form-control" type="password" autocomplete="new-password" minlength="8" maxlength="72" aria-describedby="account-password-note"><small id="account-password-note" class="form-text text-gray-600">Оставьте пустым, чтобы сменить только логин. Не менее 8 символов и не более 72 байт в UTF-8.</small></div>
+          <div class="form-group"><label for="account-confirm-password">Повторите новый пароль</label><input id="account-confirm-password" class="form-control" type="password" autocomplete="new-password" maxlength="72"></div>
+          <div id="account-feedback" class="alert mb-0" role="status" aria-live="polite" hidden></div>
+          <a id="account-login-link" class="d-inline-block mt-3" href="/login" hidden>Перейти ко входу</a>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light account-close" data-dismiss="modal">Отмена</button><button type="submit" id="account-submit" class="btn btn-primary">Сохранить изменения</button></div>
       </form>
     </div></div>
   </div>
