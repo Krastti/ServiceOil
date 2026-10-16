@@ -9,12 +9,13 @@
   <script src="theme.js?v=2.1.0"></script>
   <link rel="stylesheet" href="vendor/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="vendor/sb-admin-2/css/sb-admin-2.min.css">
-  <link rel="stylesheet" href="app.css?v=2.1.0">
+  <link rel="stylesheet" href="app.css?v=2.2.0">
   <script src="vendor/jquery/jquery.min.js" defer></script>
   <script src="vendor/bootstrap/bootstrap.bundle.min.js" defer></script>
   <script src="vendor/jquery-easing/jquery.easing.min.js" defer></script>
   <script src="vendor/sb-admin-2/js/sb-admin-2.min.js" defer></script>
-  <script src="app.js?v=2.1.0" defer></script>
+  <script src="app.js?v=2.2.0" defer></script>
+  <script src="admin.js?v=3.1.0" defer></script>
 </head>
 <body id="page-top">
   <a class="skip-link" href="#main-content">Перейти к содержимому</a>
@@ -29,6 +30,11 @@
         <li class="nav-item"><a class="nav-link" href="#history"><i class="fas fa-fw fa-chart-area" aria-hidden="true"></i><span>Динамика и сравнение</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#calculator"><i class="fas fa-fw fa-calculator" aria-hidden="true"></i><span>Бюджет заправки</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#sources"><i class="fas fa-fw fa-database" aria-hidden="true"></i><span>Источники данных</span></a></li>
+        <li class="nav-divider"><hr class="sidebar-divider"></li>
+        <li class="sidebar-heading">Администрирование</li>
+        <li class="nav-item" id="admin-login-item"><a class="nav-link" href="/login"><i class="fas fa-fw fa-user-lock" aria-hidden="true"></i><span>Вход администратора</span></a></li>
+        <li class="nav-item" id="admin-import-item" hidden><button class="nav-link sidebar-action" type="button" id="open-import" data-toggle="modal" data-target="#rosstat-import-modal"><i class="fas fa-fw fa-file-import" aria-hidden="true"></i><span>Ручной импорт</span></button></li>
+        <li class="nav-item" id="admin-logout-item" hidden><form action="/logout" method="post" id="admin-logout-form"><input type="hidden" name="_csrf" id="logout-csrf"><button class="nav-link sidebar-action" type="submit"><i class="fas fa-fw fa-sign-out-alt" aria-hidden="true"></i><span>Выйти · <span id="admin-name"></span></span></button></form></li>
         <li class="nav-divider"><hr class="sidebar-divider"></li>
         <li class="sidebar-note mx-3 mb-4"><i class="fas fa-seedling mb-3" aria-hidden="true"></i><p class="mb-1 text-white font-weight-bold">Расходы под контролем</p><p class="mb-0">Оцените бюджет топлива для вашего хозяйства.</p></li>
         <li class="text-center sidebar-collapse"><button class="rounded-circle border-0" id="sidebarToggle" type="button" aria-label="Свернуть боковую панель" aria-controls="accordionSidebar" aria-expanded="true"></button></li>
@@ -57,7 +63,7 @@
               <div class="card-body">
                 <form id="filters">
                   <div class="filter-grid">
-                    <div><label for="source-select">Набор данных</label><select id="source-select" class="custom-select" required><option value="ROSSTAT_PFO_WEEKLY">Росстат · недельные цены ПФО</option><option value="ROSSTAT_PFO">Росстат · месячные цены ПФО</option></select></div>
+                    <div><label for="source-select">Набор данных</label><select id="source-select" class="custom-select" required><option value="ROSSTAT_PFO_WEEKLY">Росстат · недельные цены ПФО</option></select></div>
                     <div><label for="region">Основной регион</label><select id="region" class="custom-select" required></select></div>
                     <div><label for="fuel">Вид топлива</label><select id="fuel" class="custom-select" required></select></div>
                     <div><label for="region-b">Сравнить с регионом</label><select id="region-b" class="custom-select"><option value="">Без сравнения</option></select></div>
@@ -91,11 +97,12 @@
                   <p class="small text-gray-600">Укажите технику или общий объём закупки. Стоимость рассчитаем по выбранной цене из сохранённого набора.</p>
                   <form id="estimate-form">
                     <div class="row mb-2">
-                      <div class="form-group col-md-6"><label for="calc-mode">Способ расчёта</label><select id="calc-mode" class="custom-select"><option value="fleet">Заправка техники</option><option value="volume">Объём закупки</option></select></div>
-                      <div class="form-group col-md-6"><label for="price-date">Цена на дату</label><select id="price-date" class="custom-select" required></select></div>
+                      <div class="form-group col-md-4" id="volume-fuel-label" hidden><label for="estimate-fuel">Вид топлива</label><select id="estimate-fuel" class="custom-select" required disabled aria-describedby="estimate-fuel-note"></select><small id="estimate-fuel-note" class="form-text text-gray-600">Выбор также меняет топливо на графике.</small></div>
+                      <div class="form-group col-md-4"><label for="calc-mode">Способ расчёта</label><select id="calc-mode" class="custom-select"><option value="fleet">Заправка техники</option><option value="volume">Объём закупки</option></select></div>
+                      <div class="form-group col-md-4"><label for="price-date">Цена на дату</label><select id="price-date" class="custom-select" required></select></div>
                       <div class="form-group col-12" id="volume-label" hidden><label for="volume">Объём закупки, л</label><input id="volume" class="form-control" type="number" min="0.01" max="1000000" step="any" value="300"></div>
                     </div>
-                    <div id="fleet"><div id="vehicles"></div><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-vehicle"><i class="fas fa-plus mr-2" aria-hidden="true"></i>Добавить технику</button></div>
+                    <div id="fleet"><p id="template-note" class="small text-gray-600" role="status">Загружаем шаблоны техники…</p><div id="vehicles"></div><div class="d-flex flex-wrap align-items-center vehicle-actions"><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-vehicle" disabled><i class="fas fa-plus mr-2" aria-hidden="true"></i>Добавить технику</button><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-vehicle-template" data-toggle="modal" data-target="#vehicle-template-modal" hidden><i class="fas fa-plus mr-2" aria-hidden="true"></i>Добавить шаблон техники</button></div></div>
                     <div class="calc-bottom mt-4 pt-3 border-top"><p class="small text-gray-600 mb-0"><i class="fas fa-info-circle mr-1" aria-hidden="true"></i>(Ёмкость − остаток) × количество</p><button type="submit" id="calculate" class="btn btn-primary" disabled>Рассчитать бюджет<i class="fas fa-arrow-right ml-2 fa-sm" aria-hidden="true"></i></button></div>
                   </form>
                   <p id="estimate-error" role="alert" class="text-danger small mt-3 mb-0"></p>
@@ -117,6 +124,35 @@
     </div>
   </div>
   <a class="scroll-to-top rounded" href="#page-top" aria-label="Вернуться наверх"><i class="fas fa-angle-up" aria-hidden="true"></i></a>
+  <div class="modal fade" id="rosstat-import-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="import-title" aria-describedby="import-description">
+    <div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content">
+      <div class="modal-header"><h2 class="modal-title h5" id="import-title">Импорт недельных цен</h2><button type="button" class="close import-close" data-dismiss="modal" aria-label="Закрыть"><span aria-hidden="true">&times;</span></button></div>
+      <form id="rosstat-import-form">
+        <div class="modal-body">
+          <p class="text-gray-600" id="import-description">Выберите период наблюдений Росстата. Обе даты включаются в диапазон, максимум — 366 дней.</p>
+          <div class="form-row"><div class="form-group col-sm-6"><label for="import-from">Начало периода</label><input id="import-from" type="date" class="form-control" required></div><div class="form-group col-sm-6"><label for="import-to">Конец периода</label><input id="import-to" type="date" class="form-control" required></div></div>
+          <div id="import-feedback" class="alert mb-0" role="status" aria-live="polite" hidden></div>
+          <a id="import-login-link" class="d-inline-block mt-3" href="/login" hidden>Войти снова</a>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light import-close" data-dismiss="modal">Закрыть</button><button type="submit" id="import-submit" class="btn btn-primary"><i class="fas fa-download mr-2" aria-hidden="true"></i><span>Импортировать</span></button></div>
+      </form>
+    </div></div>
+  </div>
+  <div class="modal fade" id="vehicle-template-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="vehicle-template-title">
+    <div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content">
+      <div class="modal-header"><h2 class="modal-title h5" id="vehicle-template-title">Добавить шаблон техники</h2><button type="button" class="close template-close" data-dismiss="modal" aria-label="Закрыть"><span aria-hidden="true">&times;</span></button></div>
+      <form id="vehicle-template-form">
+        <div class="modal-body">
+          <div class="form-group"><label for="template-name">Название техники</label><input id="template-name" class="form-control" maxlength="100" required></div>
+          <div class="form-group"><label for="template-capacity">Ёмкость бака, л</label><input id="template-capacity" class="form-control" type="number" min="0.01" max="1000000" step="0.01" required></div>
+          <div class="form-group"><label for="template-fuel">Топливо по умолчанию</label><select id="template-fuel" class="custom-select" required><option value="DIESEL">Дизельное топливо</option><option value="AI92">АИ-92</option></select></div>
+          <div id="template-feedback" class="alert mb-0" role="status" aria-live="polite" hidden></div>
+          <a id="template-login-link" class="d-inline-block mt-3" href="/login" hidden>Войти снова</a>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light template-close" data-dismiss="modal">Закрыть</button><button type="submit" id="template-submit" class="btn btn-primary">Сохранить шаблон</button></div>
+      </form>
+    </div></div>
+  </div>
 </body>
 </html>
 

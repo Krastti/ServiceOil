@@ -1,7 +1,10 @@
 package ru.krastti.service;
 
 import java.net.URI;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -14,17 +17,23 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import ru.krastti.entity.dto.RosstatPriceRow;
 import ru.krastti.entity.dto.Source;
 import ru.krastti.exception.InvalidRequestException;
+import ru.krastti.exception.RosstatSourceException;
+import org.springframework.web.client.RestClientException;
+import java.time.ZoneId;
 import ru.krastti.parser.RosstatWeeklyPriceParser;
 
 /** Получает публикации Росстата, разбирает их и передаёт строки в общий импорт CSV. */
 @Service
 public class RosstatWeeklyImportService {
-    private static final int RECENT_PUBLICATION_DAYS = 7;
+    private static final int MAX_RESPONSE_BYTES = 10_000_000;
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(20);
     private static final Pattern HREF = Pattern.compile("(?is)\\bhref\\s*=\\s*['\"]([^'\"]+)['\"]");
     private static final Pattern PUBLISHED_ON = Pattern.compile("_(\\d{2}-\\d{2}-\\d{4})\\.html$");
     private static final DateTimeFormatter PUBLISHED_DATE_FORMAT = DateTimeFormatter.ofPattern("dd-MM-uuuu");
@@ -41,13 +50,16 @@ public class RosstatWeeklyImportService {
     private final CsvImportService importer;
     private final URI publicationIndex;
     private final Clock clock;
+    private final int lookbackDays;
 
     /** Создаёт сервис с HTTP-клиентом, парсером и системными часами приложения. */
     @Autowired
     public RosstatWeeklyImportService(
             CsvImportService importer,
-            @Value("${rosstat.weekly.index-url}") URI publicationIndex) {
-        this(RestClient.builder(), new RosstatWeeklyPriceParser(), importer, publicationIndex, Clock.systemUTC());
+            @Value("${rosstat.weekly.index-url}") URI publicationIndex,
+            @Value("${rosstat.weekly.schedule.zone:Europe/Moscow}") String zone,
+            @Value("${rosstat.weekly.lookback-days:14}") int lookbackDays) {
+        this(createHttpClient(), new RosstatWeeklyPriceParser(), importer, publicationIndex, Clock.system(ZoneId.of(zone)), lookbackDays);
     }
 
     /**
@@ -61,11 +73,18 @@ public class RosstatWeeklyImportService {
             CsvImportService importer,
             URI publicationIndex,
             Clock clock) {
+        this(http, parser, importer, publicationIndex, clock, 14);
+    }
+
+    RosstatWeeklyImportService(RestClient.Builder http, RosstatWeeklyPriceParser parser, CsvImportService importer,
+            URI publicationIndex, Clock clock, int lookbackDays) {
         this.http = http.build();
         this.parser = parser;
         this.importer = importer;
         this.publicationIndex = publicationIndex;
         this.clock = clock;
+        if (lookbackDays < 7 || lookbackDays > 365) throw new IllegalArgumentException("INVALID_LOOKBACK_DAYS");
+        this.lookbackDays = lookbackDays;
     }
 
     /** Импортирует публикации с наблюдениями внутри заданного включительного периода. */
@@ -80,23 +99,25 @@ public class RosstatWeeklyImportService {
         return importPublications(publicationUris, from, to);
     }
 
-    /** Повторно проверяет публикации за последнюю неделю, чтобы подобрать данные после пропущенного запуска. */
+    /** Повторно проверяет недавние публикации, чтобы подобрать данные после пропущенного запуска. */
     public ImportResult importNewPublications() {
         var to = LocalDate.now(clock);
-        var from = to.minusDays(RECENT_PUBLICATION_DAYS);
-        return importRange(from, to, to);
+        // Публикация обычно выходит позже наблюдения; запас не отбрасывает строку старой недели.
+        return importPublications(findPublicationUris(to.minusDays(lookbackDays), to),
+                to.minusDays(lookbackDays + 7L), to);
     }
 
     /** Загружает публикации, отбирает строки периода и передаёт итоговый CSV в общий импорт. */
     private ImportResult importPublications(List<URI> publicationUris, LocalDate from, LocalDate to) {
         var rowsByKey = new LinkedHashMap<String, RosstatPriceRow>();
+        // Сначала старые публикации: исправление из более новой страницы побеждает независимо от порядка индекса.
         for (var uri : publicationUris) {
-            var html = http.get().uri(uri).retrieve().body(String.class);
-            if (html == null || html.length() > 10_000_000) {
-                throw new IllegalArgumentException("Публикация Росстата пуста или слишком велика");
-            }
-            if (!containsFuelPricePublication(html)) continue;
-            for (var row : parser.parse(html, uri)) {
+            var html = fetchHtml(uri);
+            if (!parser.isWeeklyFuelPricePublication(html)) continue;
+            List<RosstatPriceRow> parsed;
+            try { parsed = parser.parse(html, uri); }
+            catch (IllegalArgumentException failure) { throw RosstatSourceException.format(); }
+            for (var row : parsed) {
                 if (row.observedOn().isBefore(from) || row.observedOn().isAfter(to)) continue;
                 var key = row.regionCode() + ':' + row.fuelCode() + ':' + row.observedOn();
                 rowsByKey.put(key, row);
@@ -112,10 +133,7 @@ public class RosstatWeeklyImportService {
     /** Загружает индекс Росстата и выбирает ссылки на публикации в заданном диапазоне дат. */
     private List<URI> findPublicationUris(LocalDate publishedFrom, LocalDate publishedTo) {
         requireRosstatUri(publicationIndex);
-        var html = http.get().uri(publicationIndex).retrieve().body(String.class);
-        if (html == null || html.length() > 10_000_000) {
-            throw new IllegalArgumentException("Список публикаций Росстата пуст или слишком велик");
-        }
+        var html = fetchHtml(publicationIndex);
 
         var result = new ArrayList<URI>();
         Matcher matcher = HREF.matcher(html);
@@ -140,14 +158,45 @@ public class RosstatWeeklyImportService {
                 }
             }
         }
-        return result.stream().distinct().toList();
+        return result.stream().distinct().sorted(java.util.Comparator
+                .comparing((URI uri) -> {
+                    var date = PUBLISHED_ON.matcher(uri.getPath());
+                    date.find();
+                    return LocalDate.parse(date.group(1), PUBLISHED_DATE_FORMAT);
+                }).thenComparing(URI::toString)).toList();
     }
 
-    /** Проверяет, что HTML относится к публикации о ценах на бензин и дизельное топливо. */
-    private static boolean containsFuelPricePublication(String html) {
-        var normalized = html.toLowerCase(Locale.ROOT).replace('ё', 'е');
-        return normalized.contains("средние потребительские цены на бензин автомобильный")
-                && normalized.contains("дизельное топливо");
+    /** Ограниченно загружает HTML и отклоняет ошибочные или слишком большие ответы Росстата. */
+    private String fetchHtml(URI uri) {
+        try {
+            return http.get().uri(uri).exchange((request, response) -> {
+                if (!response.getStatusCode().is2xxSuccessful()) {
+                    throw RosstatSourceException.unavailable();
+                }
+
+                if (response.getHeaders().getContentLength() > MAX_RESPONSE_BYTES) {
+                    throw RosstatSourceException.format();
+                }
+
+                var bytes = response.getBody().readNBytes(MAX_RESPONSE_BYTES + 1);
+                if (bytes.length > MAX_RESPONSE_BYTES) {
+                    throw RosstatSourceException.format();
+                }
+
+                var contentType = response.getHeaders().getContentType();
+                Charset charset = contentType == null ? null : contentType.getCharset();
+                return new String(bytes, charset == null ? StandardCharsets.UTF_8 : charset);
+            });
+        } catch (RestClientException failure) {
+            throw RosstatSourceException.unavailable();
+        }
+    }
+
+    private static RestClient.Builder createHttpClient() {
+        var requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(CONNECT_TIMEOUT);
+        requestFactory.setReadTimeout(READ_TIMEOUT);
+        return RestClient.builder().requestFactory(requestFactory);
     }
 
     /** Проверяет корректность дат и ограничивает импорт периодом не длиннее 366 дней. */
@@ -160,12 +209,13 @@ public class RosstatWeeklyImportService {
     /** Отклоняет адрес публикации, если он не относится к разрешённому домену Росстата. */
     private static void requireRosstatUri(URI uri) {
         if (isRosstatUri(uri)) return;
-        throw new IllegalArgumentException("Разрешены только HTTPS-адреса Росстата");
+        throw new IllegalArgumentException("Разрешены только HTTP- или HTTPS-адреса Росстата");
     }
 
-    /** Проверяет HTTPS-схему, отсутствие учётных данных в URL и домен Росстата. */
+    /** Проверяет HTTP(S)-схему, отсутствие учётных данных в URL и домен Росстата. */
     private static boolean isRosstatUri(URI uri) {
-        if (uri == null || !"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null
+        if (uri == null || !("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()))
+                || uri.getHost() == null
                 || uri.getUserInfo() != null) return false;
         var host = uri.getHost().toLowerCase(Locale.ROOT);
         return host.equals("rosstat.gov.ru") || host.endsWith(".rosstat.gov.ru");

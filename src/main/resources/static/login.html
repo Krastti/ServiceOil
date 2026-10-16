@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход администратора — ServiceOil</title>
+  <script src="/theme.js?v=2.1.0"></script>
+  <link rel="stylesheet" href="/vendor/fontawesome-free/css/all.min.css">
+  <link rel="stylesheet" href="/vendor/sb-admin-2/css/sb-admin-2.min.css">
+  <link rel="stylesheet" href="/app.css?v=3.0.0">
+  <script src="/login.js?v=3.0.0" defer></script>
+</head>
+<body class="login-page">
+  <main class="login-shell">
+    <a class="login-brand" href="/"><i class="fas fa-gas-pump mr-2" aria-hidden="true"></i>ServiceOil</a>
+    <section class="card shadow border-0 login-card" aria-labelledby="login-title"><div class="card-body p-4 p-sm-5">
+      <div class="login-icon mb-3"><i class="fas fa-user-shield" aria-hidden="true"></i></div>
+      <h1 class="h4 text-gray-800" id="login-title">Вход администратора</h1>
+      <p class="text-gray-600 mb-4">Войдите, чтобы загружать недельные цены Росстата.</p>
+      <div id="login-message" class="alert alert-danger" role="alert" hidden></div>
+      <form method="post" action="/login" id="login-form">
+        <input type="hidden" name="_csrf" id="login-csrf">
+        <div class="form-group"><label for="username">Логин</label><input id="username" name="username" class="form-control" autocomplete="username" required maxlength="64" autofocus></div>
+        <div class="form-group"><label for="password">Пароль</label><input type="password" id="password" name="password" class="form-control" autocomplete="current-password" required></div>
+        <button id="login-submit" type="submit" class="btn btn-primary btn-block mt-4" disabled>Войти</button>
+      </form>
+      <a class="small d-inline-block mt-4" href="/"><i class="fas fa-arrow-left mr-2" aria-hidden="true"></i>Вернуться к просмотру цен</a>
+    </div></section>
+  </main>
+</body>
+</html>

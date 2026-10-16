@@ -10,9 +10,34 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import ru.krastti.exception.ApiException;
+import ru.krastti.exception.RosstatSourceException;
+import ru.krastti.exception.InvalidImportException;
+import ru.krastti.exception.ImportJournalUnavailableException;
+import org.springframework.dao.PessimisticLockingFailureException;
 
 @RestControllerAdvice
 public class ApiErrorHandler {
+
+    @ExceptionHandler(RosstatSourceException.class)
+    public ResponseEntity<ErrorResponseDTO> source(RosstatSourceException exception) {
+        return ResponseEntity.status(exception.status()).body(new ErrorResponseDTO(exception.code(),
+                exception.status() == 502 ? "Формат публикации Росстата не распознан." : "Росстат временно недоступен."));
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponseDTO> busy(PessimisticLockingFailureException exception) {
+        return ResponseEntity.status(409).body(new ErrorResponseDTO("IMPORT_BUSY", "Импорт уже выполняется. Повторите запрос позже."));
+    }
+
+    @ExceptionHandler(InvalidImportException.class)
+    public ResponseEntity<ErrorResponseDTO> importRejected(InvalidImportException exception) {
+        return ResponseEntity.status(422).body(new ErrorResponseDTO("INVALID_IMPORT", "Набор данных отклонён, изменения отменены."));
+    }
+
+    @ExceptionHandler(ImportJournalUnavailableException.class)
+    public ResponseEntity<ErrorResponseDTO> journal(ImportJournalUnavailableException exception) {
+        return ResponseEntity.status(503).body(new ErrorResponseDTO("IMPORT_JOURNAL_UNAVAILABLE", "Журнал импорта временно недоступен."));
+    }
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponseDTO> domain(ApiException exception) {

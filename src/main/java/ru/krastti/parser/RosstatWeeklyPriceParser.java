@@ -59,6 +59,15 @@ public final class RosstatWeeklyPriceParser {
         return List.copyOf(result.values());
     }
 
+    /** Проверяет заголовок после извлечения HTML-текста, чтобы месячные сводки не считались недельными. */
+    public boolean isWeeklyFuelPricePublication(String html) {
+        require(html != null && !html.isBlank() && html.length() <= MAX_HTML_LENGTH);
+        var text = normalize(readHtml(html).text());
+        var normalized = text.toLowerCase(Locale.ROOT).replace('ё', 'е');
+        return normalized.contains("средние потребительские цены на бензин автомобильный")
+                && normalized.contains("дизельное топливо") && DATE.matcher(text).find();
+    }
+
     /** Сериализует результат в CSV, который принимает CsvImportService. */
     public String toCsv(List<RosstatPriceRow> rows) {
         require(rows != null && !rows.isEmpty());
@@ -139,9 +148,10 @@ public final class RosstatWeeklyPriceParser {
         throw new IllegalArgumentException("В публикации Росстата не найдена таблица региональных цен");
     }
 
-    /** Проверяет, что ссылка на исходную публикацию ведёт по HTTPS на домен Росстата. */
+    /** Проверяет, что ссылка на исходную публикацию ведёт по HTTP(S) на домен Росстата. */
     private static void validateSourceUri(URI uri) {
-        require(uri != null && "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null
+        require(uri != null && ("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()))
+                && uri.getHost() != null
                 && uri.getUserInfo() == null);
         var host = uri.getHost().toLowerCase(Locale.ROOT);
         require(host.equals("rosstat.gov.ru") || host.endsWith(".rosstat.gov.ru"));

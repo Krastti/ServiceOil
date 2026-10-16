@@ -1,0 +1,113 @@
+'use strict';
+
+(() => {
+  let busy = false, imported = false, templateBusy = false;
+  const get = id => document.getElementById(id);
+  const feedback = (text, type) => {
+    get('import-feedback').textContent = text;
+    get('import-feedback').className = 'alert mb-0 alert-' + type;
+    get('import-feedback').hidden = false;
+  };
+  async function session() {
+    const response = await fetch('/api/v1/admin/session', { credentials: 'same-origin', cache: 'no-store' });
+    if (!response.ok) throw Error('Не удалось проверить вход администратора.');
+    const value = await response.json();
+    get('admin-login-item').hidden = value.authenticated;
+    get('admin-import-item').hidden = !value.authenticated;
+    get('admin-logout-item').hidden = !value.authenticated;
+    get('add-vehicle-template').hidden = !value.authenticated;
+    get('admin-name').textContent = value.username || '';
+    get('logout-csrf').value = value.csrfToken;
+    if (value.authenticated) document.querySelector('.topbar-title > span').textContent = 'Панель администратора';
+    return value;
+  }
+  const date = value => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+  const today = new Date(), from = new Date();
+  from.setDate(from.getDate() - 14);
+  get('import-from').value = date(from);
+  get('import-to').value = date(today);
+
+  $('#rosstat-import-modal').on('hide.bs.modal', event => { if (busy) event.preventDefault(); });
+  $('#rosstat-import-modal').on('hidden.bs.modal', () => { if (imported) location.reload(); });
+  get('rosstat-import-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (busy) return;
+    const from = get('import-from').value, to = get('import-to').value;
+    if (!from || !to || from > to || (Date.parse(to) - Date.parse(from)) / 86400000 >= 366) {
+      feedback('Выберите период от 1 до 366 дней: начало не позже конца.', 'danger');
+      return;
+    }
+    busy = true;
+    get('import-submit').disabled = true;
+    document.querySelectorAll('.import-close').forEach(button => button.disabled = true);
+    get('import-login-link').hidden = true;
+    feedback('Загружаем публикации и сохраняем недельные цены…', 'info');
+    try {
+      const auth = await session();
+      if (!auth.authenticated) { get('import-login-link').hidden = false; throw Error('Сессия завершена. Войдите снова.'); }
+      const response = await fetch('/api/v1/admin/rosstat/import', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', [auth.csrfHeader]: auth.csrfToken },
+        body: JSON.stringify({ from, to })
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        if (response.status === 401) { get('import-login-link').hidden = false; await session(); }
+        throw Error(result.message || 'Не удалось выполнить импорт.');
+      }
+      feedback(`Импорт завершён. Найдено публикаций: ${result.publicationsFound}. Обработано строк: ${result.rowsImported}.`, 'success');
+      imported = true;
+    } catch (error) {
+      feedback(error.message || 'Сервер недоступен. Повторите попытку.', 'danger');
+    } finally {
+      busy = false;
+      get('import-submit').disabled = false;
+      document.querySelectorAll('.import-close').forEach(button => button.disabled = false);
+    }
+  });
+  $('#vehicle-template-modal').on('hide.bs.modal', event => { if (templateBusy) event.preventDefault(); });
+  $('#vehicle-template-modal').on('show.bs.modal', () => {
+    get('template-feedback').hidden = true;
+    get('template-login-link').hidden = true;
+  });
+  get('vehicle-template-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (templateBusy) return;
+    const name = get('template-name').value.trim();
+    if (!name) { get('template-name').focus(); return; }
+    templateBusy = true;
+    get('template-submit').disabled = true;
+    document.querySelectorAll('.template-close').forEach(button => button.disabled = true);
+    get('template-login-link').hidden = true;
+    const feedback = (text, type) => {
+      get('template-feedback').textContent = text;
+      get('template-feedback').className = 'alert mb-0 alert-' + type;
+      get('template-feedback').hidden = false;
+    };
+    feedback('Сохраняем шаблон…', 'info');
+    try {
+      const auth = await session();
+      if (!auth.authenticated) { get('template-login-link').hidden = false; throw Error('Сессия завершена. Войдите снова.'); }
+      const response = await fetch('/api/v1/admin/vehicle-templates', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', [auth.csrfHeader]: auth.csrfToken },
+        body: JSON.stringify({ name, tankCapacity: Number(get('template-capacity').value), fuelCode: get('template-fuel').value })
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        if (response.status === 401) { get('template-login-link').hidden = false; await session(); }
+        throw Error(result.message || 'Не удалось сохранить шаблон.');
+      }
+      get('vehicle-template-form').reset();
+      feedback('Шаблон «' + result.name + '» сохранён и добавлен в список техники.', 'success');
+      document.dispatchEvent(new CustomEvent('vehicle-template-created', { detail: result }));
+    } catch (error) {
+      feedback(error.message || 'Не удалось сохранить шаблон. Повторите попытку.', 'danger');
+    } finally {
+      templateBusy = false;
+      get('template-submit').disabled = false;
+      document.querySelectorAll('.template-close').forEach(button => button.disabled = false);
+    }
+  });
+  session().catch(() => { /* Публичный просмотр цен доступен и при ошибке проверки сессии. */ });
+})();

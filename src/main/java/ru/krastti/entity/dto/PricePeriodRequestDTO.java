@@ -9,6 +9,6 @@ public record PricePeriodRequestDTO(String sourceId, @NotBlank String regionId,
                                    @NotBlank String fuelCode, @NotNull LocalDate from,
                                    @NotNull LocalDate to) {
     public PricePeriodRequestDTO {
-        if (sourceId == null) sourceId = "ROSSTAT_PFO";
+        if (sourceId == null) sourceId = "ROSSTAT_PFO_WEEKLY";
     }
 }

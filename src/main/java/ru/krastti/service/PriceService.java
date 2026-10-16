@@ -171,7 +171,7 @@ public class PriceService {
      * Рассчитывает бюджет закупки топлива по цене выбранного региона на точную дату.
      * Объём берётся из запроса: это либо заданное количество литров, либо расчёт по технике.
      * Если указан регион для сравнения, бюджет для него рассчитывается для того же объёма и даты.
-     * При отсутствии источника используется ROSSTAT_PFO.
+     * При отсутствии источника используется ROSSTAT_PFO_WEEKLY.
      *
      * @param request параметры расчёта: источник, регион, топливо, дата и объём или список техники
      * @return цена за литр, общий объём, рассчитанный бюджет и, если запрошено, сравнение регионов
@@ -182,7 +182,7 @@ public class PriceService {
      */
     public EstimateResponseDTO estimate(EstimateRequestDTO request) {
         String sourceId = request.sourceId() == null
-                ? "ROSSTAT_PFO"
+                ? "ROSSTAT_PFO_WEEKLY"
                 : request.sourceId();
 
         var metadata = metadata(sourceId);
@@ -289,10 +289,6 @@ public class PriceService {
             warnings.add("Демонстрационные данные, цены вымышлены.");
         } else {
             warnings.add("Архивные опубликованные данные; цена региона оценивает бюджет и не гарантирует предложение АЗС.");
-        }
-
-        if ("MONTHLY".equals(dataFrequency)) {
-            warnings.add("Месячные данные на конец периода; дневная история отсутствует.");
         }
 
         boolean latestImportFailed = imports.findFirstBySourceIdOrderByIdDesc(sourceId)

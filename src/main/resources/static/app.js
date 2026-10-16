@@ -7,6 +7,7 @@ const dateText = date => new Date(date + 'T12:00:00').toLocaleDateString('ru-RU'
 const chartColors = ['var(--series-a)', 'var(--series-b)'];
 let catalog, loaded, active;
 let serial = 0, estimateSerial = 0, rowId = 0;
+let vehicleTemplates = [], priceDatesSerial = 0;
 
 function element(tag, text, className) {
   const node = document.createElement(tag);
@@ -45,15 +46,37 @@ function option(value, label) {
 }
 function regionName(id) { return catalog.regions.find(region => region.regionId === id)?.name || id; }
 
-function availablePeriod() {
+function availablePeriod(full = false) {
   const period = catalog.availability.find(item => item.regionId === byId('region').value && item.fuelCode === byId('fuel').value);
-  if (period) { byId('from').value = period.from; byId('to').value = period.to; }
+  if (!period) return;
+  if (full) {
+    byId('from').value = period.from;
+    byId('to').value = period.to;
+    return;
+  }
+  const today = new Date();
+  // Ограничиваем число дней при переходе, например, с 31 марта на февраль.
+  const previousMonthDays = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+  const start = new Date(today.getFullYear(), today.getMonth() - 1, Math.min(today.getDate(), previousMonthDays), 12);
+  const weekday = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() + (weekday <= 3 ? -weekday : 7 - weekday));
+  const isoDate = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const monthStart = isoDate(start), todayText = isoDate(today);
+  byId('from').value = period.from > monthStart && period.from <= todayText ? period.from : monthStart;
+  // Если свежих данных нет, оставляем последний месяц, чтобы показать отсутствие наблюдений.
+  byId('to').value = period.to >= byId('from').value && period.to < todayText ? period.to : todayText;
 }
 function updateFuels() {
   const previous = byId('fuel').value;
   const supported = catalog.availability.filter(item => item.regionId === byId('region').value).map(item => item.fuelCode);
-  byId('fuel').replaceChildren(...catalog.fuels.filter(fuel => supported.includes(fuel.code)).map(fuel => option(fuel.code, fuel.name)));
-  byId('fuel').value = supported.includes(previous) ? previous : (supported.includes('DIESEL') ? 'DIESEL' : supported[0]);
+  const fuels = catalog.fuels.filter(fuel => supported.includes(fuel.code));
+  const selected = supported.includes(previous) ? previous : (supported.includes('DIESEL') ? 'DIESEL' : supported[0]);
+  ['fuel', 'estimate-fuel'].forEach(id => {
+    byId(id).replaceChildren(...fuels.map(fuel => option(fuel.code, fuel.name)));
+    byId(id).value = selected;
+  });
+  byId('estimate-fuel').disabled = byId('calc-mode').value !== 'volume';
+  byId('vehicles').querySelectorAll('.vehicle').forEach(updateVehicleFuels);
   updateRegionsB();
 }
 function updateRegionsB() {
@@ -65,6 +88,7 @@ function updateRegionsB() {
 }
 function resetResults() {
   estimateSerial++;
+  priceDatesSerial++;
   loaded = null;
   byId('calculate').disabled = true;
   ['summary', 'chart', 'points-table', 'legend', 'price-date', 'estimate-result'].forEach(id => byId(id).replaceChildren());
@@ -82,21 +106,51 @@ function invalidate() {
 
 function source(metadata, points) {
   const modes = { DEMO: 'Демонстрационные данные', OPEN_DATA: 'Открытые данные' };
-  const frequency = { MONTHLY: 'месячные', WEEKLY: 'недельные', DAILY: 'дневные' }[metadata.frequency];
+  const frequency = 'недельные';
   byId('data-mode').textContent = (modes[metadata.dataMode] || metadata.dataMode) + (frequency ? ' · ' + frequency : '');
   byId('data-mode').className = 'badge mb-3 ' + (metadata.dataMode === 'DEMO' ? 'badge-warning' : 'badge-primary');
   byId('source-name').textContent = metadata.sourceName;
   byId('source-method').textContent = metadata.methodology;
   byId('import-date').textContent = 'Загружено: ' + (metadata.lastImportedAt ? new Date(metadata.lastImportedAt).toLocaleString('ru-RU') : 'неизвестно');
   byId('warnings').replaceChildren(...metadata.warnings.map(warning => element('li', warning)));
-  const links = [...new Set(points.map(point => point.sourceUrl))];
-  byId('source-links').replaceChildren(...links.flatMap((url, index) => {
-    try { if (new URL(url).protocol !== 'https:') return []; } catch { return []; }
-    const link = element('a', 'Публикация источника ' + (index + 1) + ' ↗');
-    link.href = url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    return [link];
+  const publications = new Map();
+  points.forEach(point => {
+    const url = point.sourceUrl;
+    if (publications.has(url)) return;
+    let publishedDate;
+    try {
+      const sourceUri = new URL(url);
+      const rosstatHost = sourceUri.hostname === 'rosstat.gov.ru' || sourceUri.hostname.endsWith('.rosstat.gov.ru');
+      if (sourceUri.protocol !== 'https:' && !(sourceUri.protocol === 'http:' && rosstatHost)) return;
+      // Росстат указывает дату выхода в имени страницы; дата наблюдения может быть раньше.
+      const match = rosstatHost && sourceUri.pathname.match(/_(\d{2})-(\d{2})-(\d{4})\.html$/);
+      if (match) publishedDate = `${match[3]}-${match[2]}-${match[1]}`;
+    } catch { return; }
+    publications.set(url, { url, date: publishedDate || point.date, publishedDate });
+  });
+  const groups = new Map();
+  [...publications.values()].sort((a, b) => a.date.localeCompare(b.date) || a.url.localeCompare(b.url)).forEach(publication => {
+    const month = publication.date.slice(0, 7);
+    if (!groups.has(month)) groups.set(month, []);
+    groups.get(month).push(publication);
+  });
+  byId('source-links').replaceChildren(...[...groups].map(([month, items]) => {
+    const group = element('details', undefined, 'source-month');
+    const monthName = new Date(month + '-01T12:00:00').toLocaleDateString('ru-RU', { month: 'long' });
+    const heading = monthName[0].toUpperCase() + monthName.slice(1) + ' ' + month.slice(0, 4);
+    const list = element('ul', undefined, 'source-publications');
+    list.append(...items.map(publication => {
+      const item = element('li');
+      const label = publication.publishedDate ? 'Публикация от ' : 'Публикация · наблюдение от ';
+      const link = element('a', label + dateText(publication.date) + ' ↗');
+      link.href = publication.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      item.append(link);
+      return item;
+    }));
+    group.append(element('summary', heading, 'source-month-title text-gray-800'), list);
+    return group;
   }));
 }
 
@@ -165,30 +219,49 @@ function draw(series) {
     chart.append(svg('line', { x1: 70, y1: y(price), x2: 750, y2: y(price), stroke: 'var(--chart-grid)', 'stroke-dasharray': '4 4' }),
       svg('text', { x: 58, y: y(price) + 4, 'text-anchor': 'end' }, money(price)));
   }
-  // Keep labels readable when an imported source contains many observations.
-  const labelStep = Math.max(1, Math.ceil(dates.length / 6));
-  dates.forEach((date, index) => {
-    if (index % labelStep === 0 || index === dates.length - 1) chart.append(svg('text', { x: x(date), y: 266, 'text-anchor': 'middle' }, dateText(date)));
+  // Измеряем подписи в координатах SVG и заранее оставляем место для последней даты.
+  const dateLabels = dates.map((date, index) => {
+    const anchor = index === 0 ? 'start' : index === dates.length - 1 ? 'end' : 'middle';
+    const label = svg('text', { x: x(date), y: 266, 'text-anchor': anchor }, dateText(date));
+    chart.append(label);
+    const width = label.getComputedTextLength();
+    const left = x(date) - (anchor === 'end' ? width : anchor === 'middle' ? width / 2 : 0);
+    return { label, left, right: left + width };
+  });
+  const labelGap = 20;
+  const lastLabel = dateLabels.at(-1);
+  let previousRight = -Infinity;
+  dateLabels.forEach((item, index) => {
+    const endpoint = index === 0 || index === dateLabels.length - 1;
+    if (endpoint || (item.left >= previousRight + labelGap && item.right + labelGap <= lastLabel.left)) {
+      previousRight = item.right;
+    } else {
+      item.label.remove();
+    }
   });
   series.forEach((item, index) => {
     const color = chartColors[index % chartColors.length];
     const legend = element('span', regionName(item.id));
     legend.style.setProperty('--color', color);
     byId('legend').append(legend);
-    let previous;
-    item.points.forEach(point => {
-      if (previous) {
-        const a = new Date(previous.date + 'T12:00:00'), b = new Date(point.date + 'T12:00:00');
-        const months = (b.getFullYear() - a.getFullYear()) * 12 + b.getMonth() - a.getMonth();
-        const days = (Date.parse(point.date) - Date.parse(previous.date)) / 86400000;
-        const contiguous = catalog.metadata.frequency === 'MONTHLY' ? months === 1 : days === (catalog.metadata.frequency === 'WEEKLY' ? 7 : 1);
-        if (contiguous) chart.append(svg('line', { x1: x(previous.date), y1: y(previous.price), x2: x(point.date), y2: y(point.price), stroke: color, 'stroke-width': 3 }));
+    const points = [...item.points].sort((a, b) => a.date.localeCompare(b.date));
+    // Сначала соединения, затем точки: линия не перекрывает маркеры наблюдений.
+    points.slice(1).forEach((point, pointIndex) => {
+      const previous = points[pointIndex];
+      const days = (Date.parse(point.date) - Date.parse(previous.date)) / 86400000;
+      const line = svg('line', { x1: x(previous.date), y1: y(previous.price), x2: x(point.date), y2: y(point.price), stroke: color, 'stroke-width': 3 });
+      // Сдвиг недельной даты на один день не считаем пропуском недели.
+      if (days > 8) {
+        line.setAttribute('stroke-dasharray', '6 5');
+        line.append(svg('title', {}, 'Пропуск наблюдений: между точками ' + days + ' дней.'));
       }
+      chart.append(line);
+    });
+    points.forEach(point => {
       const label = regionName(item.id) + ' · ' + dateText(point.date) + ' · ' + money(point.price) + ' ₽/л';
       const dot = svg('circle', { cx: x(point.date), cy: y(point.price), r: 5, fill: color, stroke: 'var(--surface)', 'stroke-width': 2, tabindex: 0, 'aria-label': label });
       dot.append(svg('title', {}, label));
       chart.append(dot);
-      previous = point;
       const row = element('tr');
       row.append(element('td', regionName(item.id)), element('td', dateText(point.date)), element('td', money(point.price)));
       byId('points-table').append(row);
@@ -224,20 +297,21 @@ async function load(event) {
       b ? postJson('/prices/summary', { ...query, regionId: b }, { signal }) : null
     ]);
     if (id !== serial) return;
-    loaded = { a, b, fuel, summary, comparison };
+    loaded = { a, b, fuel, summary, comparison, datesByFuel: new Map(), from, to };
     renderSummary(summary, history, other, comparison);
     const series = [{ id: a, points: history.points }, ...(comparison ? [{ id: b, points: comparison.historyB }] : [])];
     draw(series);
     source(summary.metadata, series.flatMap(item => item.points));
     const dates = comparison ? comparison.commonDates : history.points.map(point => point.date);
-    byId('price-date').replaceChildren(...dates.map(date => option(date, dateText(date))));
-    if (dates.length) byId('price-date').value = dates.at(-1);
-    byId('calculate').disabled = !dates.length;
+    loaded.datesByFuel.set(fuel, dates);
+    await updatePriceDates();
+    if (id !== serial) return;
     byId('comparison-note').textContent = comparison
       ? (comparison.comparison ? 'На общей дате ' + dateText(comparison.comparison.date) + ' разница ' + money(comparison.comparison.difference) + ' ₽/л (основной регион минус второй).' : comparison.warnings.join(' '))
       : 'Точки — даты наблюдения. Пропуски не заменяются нулями. Для сравнения выберите второй регион.';
+    byId('comparison-note').textContent += ' Пунктир обозначает пропуски недельных наблюдений.';
     const hasPoints = series.some(item => item.points.length);
-    status(hasPoints ? 'Показаны сохранённые наблюдения. ' + (summary.metadata.frequency === 'MONTHLY' ? 'Месячная статистика.' : '')
+    status(hasPoints ? 'Показаны сохранённые недельные наблюдения.'
       : 'За выбранный период данных нет. Выберите даты из доступного набора.');
   } catch (error) {
     if (error.name !== 'AbortError' && id === serial) {
@@ -256,30 +330,110 @@ function clearEstimate() {
   estimateSerial++;
   byId('estimate-result').replaceChildren();
   byId('estimate-error').textContent = '';
-  byId('calculate').disabled = !loaded || !byId('price-date').value;
+  byId('calculate').disabled = !loaded || !byId('price-date').value || byId('price-date').disabled
+    || (byId('calc-mode').value === 'fleet' && !byId('vehicles').children.length);
 }
-function addVehicle() {
-  if (byId('vehicles').children.length >= 100) return;
+async function loadVehicleTemplates() {
+  const response = await fetch('/api/v1/vehicle-templates', { cache: 'no-store' });
+  if (!response.ok) throw Error('Не удалось загрузить шаблоны техники. Обновите страницу.');
+  vehicleTemplates = await response.json();
+  byId('template-note').textContent = vehicleTemplates.length
+    ? 'Выберите шаблон и топливо для каждой строки. Ёмкость бака берётся из шаблона.'
+    : 'Шаблонов техники пока нет. Администратор может добавить их в своей консоли. Доступен расчёт по объёму закупки.';
+  byId('add-vehicle').disabled = !vehicleTemplates.length || byId('vehicles').children.length >= 100;
+  byId('vehicles').querySelectorAll('.vehicle').forEach(row => {
+    const select = row.querySelector('[name="templateId"]');
+    const selected = select.value;
+    select.replaceChildren(...vehicleTemplates.map(template => option(String(template.id), template.name)));
+    select.value = selected;
+  });
+}
+function updateVehicleFuels(row) {
+  if (!catalog) return;
+  const select = row.querySelector('[name="fuelCode"]');
+  const selected = select.value;
+  const supported = catalog.availability.filter(item => item.regionId === byId('region').value).map(item => item.fuelCode);
+  select.replaceChildren(...catalog.fuels.filter(fuel => supported.includes(fuel.code)).map(fuel => option(fuel.code, fuel.name)));
+  if (selected && !supported.includes(selected)) select.append(option(selected, (selected === 'DIESEL' ? 'Дизель' : selected) + ' — нет данных'));
+  select.value = selected || byId('fuel').value;
+  select.setCustomValidity(supported.includes(select.value) ? '' : 'Для выбранного топлива нет данных в основном регионе.');
+}
+async function updatePriceDates() {
+  const id = ++priceDatesSerial, selection = loaded;
+  if (!selection) { clearEstimate(); return; }
+  const previous = byId('price-date').value;
+  byId('price-date').disabled = true;
+  clearEstimate();
+  const fuels = byId('calc-mode').value === 'volume' ? [selection.fuel]
+    : [...new Set([...byId('vehicles').children].filter(row =>
+      Number(row.querySelector('[name="remainingLiters"]').value) < Number(row.querySelector('[name="tankCapacity"]').value))
+      .map(row => row.querySelector('[name="fuelCode"]').value))];
+  try {
+    const lists = await Promise.all(fuels.map(async fuelCode => {
+      if (selection.datesByFuel.has(fuelCode)) return selection.datesByFuel.get(fuelCode);
+      const query = { sourceId: catalog.metadata.source, regionId: selection.a, fuelCode, from: selection.from, to: selection.to };
+      const [a, b] = await Promise.all([
+        postJson('/prices/history', query),
+        selection.b ? postJson('/prices/history', { ...query, regionId: selection.b }) : null
+      ]);
+      const otherDates = b ? new Set(b.points.map(point => point.date)) : null;
+      const dates = a.points.map(point => point.date).filter(date => !otherDates || otherDates.has(date));
+      selection.datesByFuel.set(fuelCode, dates);
+      return dates;
+    }));
+    if (id !== priceDatesSerial || selection !== loaded) return;
+    const dates = lists.length ? lists[0].filter(date => lists.every(list => list.includes(date))).sort() : [];
+    byId('price-date').replaceChildren(...dates.map(date => option(date, dateText(date))));
+    if (dates.length) byId('price-date').value = dates.includes(previous) ? previous : dates.at(-1);
+    byId('price-date').disabled = !dates.length;
+    clearEstimate();
+    if (fuels.length && !dates.length) byId('estimate-error').textContent = 'Нет общей даты цены для выбранного топлива и регионов в этом периоде.';
+    if (!fuels.length && byId('vehicles').children.length) byId('estimate-error').textContent = 'Для выбранной техники заправка не требуется. Проверьте остаток в баках.';
+  } catch (error) {
+    if (id !== priceDatesSerial || selection !== loaded) return;
+    byId('price-date').replaceChildren();
+    byId('estimate-error').textContent = error.message;
+  }
+}
+function addVehicle(templateId) {
+  if (!vehicleTemplates.length || byId('vehicles').children.length >= 100) return;
   const row = element('div', undefined, 'vehicle');
   const id = ++rowId;
-  const fields = [['name', 'Техника', 'Трактор', 'text'], ['tankCapacity', 'Ёмкость, л', 200, 'number'],
-    ['remainingLiters', 'Остаток, л', 50, 'number'], ['count', 'Количество', 2, 'number']];
-  fields.forEach(([key, title, value, type]) => {
-    const label = element('label', title), input = element('input', undefined, 'form-control');
-    input.type = type;
+  const fields = [['templateId', 'Техника', 'select'], ['fuelCode', 'Топливо', 'select'],
+    ['tankCapacity', 'Ёмкость, л', 'number'], ['remainingLiters', 'Остаток, л', 'number'], ['count', 'Количество', 'number']];
+  fields.forEach(([key, title, type]) => {
+    const label = element('label', title), input = element(type === 'select' ? 'select' : 'input', undefined, type === 'select' ? 'custom-select' : 'form-control');
+    if (type !== 'select') input.type = type;
     input.name = key;
-    input.value = value;
     input.id = 'vehicle-' + id + '-' + key;
     input.required = true;
     label.htmlFor = input.id;
-    if (type === 'number') {
+    if (type !== 'select') {
       input.min = key === 'remainingLiters' ? '0' : '1';
       input.max = key === 'count' ? '1000' : '1000000';
       input.step = key === 'count' ? '1' : 'any';
-    } else input.maxLength = 100;
+      input.value = key === 'count' ? '1' : '0';
+      if (key === 'tankCapacity') { input.readOnly = true; input.min = '0.01'; }
+    }
     label.append(input);
     row.append(label);
   });
+  const templateSelect = row.querySelector('[name="templateId"]');
+  templateSelect.append(...vehicleTemplates.map(template => option(String(template.id), template.name)));
+  if (typeof templateId === 'number') templateSelect.value = String(templateId);
+  const applyTemplate = () => {
+    const template = vehicleTemplates.find(item => String(item.id) === templateSelect.value);
+    row.querySelector('[name="tankCapacity"]').value = template.tankCapacity;
+    const remaining = row.querySelector('[name="remainingLiters"]');
+    remaining.max = template.tankCapacity;
+    remaining.value = '0';
+    const fuel = row.querySelector('[name="fuelCode"]');
+    fuel.replaceChildren(option(template.fuelCode, template.fuelCode));
+    updateVehicleFuels(row);
+  };
+  applyTemplate();
+  templateSelect.onchange = () => { applyTemplate(); updatePriceDates(); };
+  row.querySelector('[name="fuelCode"]').onchange = () => { updateVehicleFuels(row); updatePriceDates(); };
   const remove = element('button', undefined, 'btn btn-outline-danger vehicle-remove');
   remove.type = 'button';
   remove.setAttribute('aria-label', 'Удалить строку техники ' + id);
@@ -287,12 +441,12 @@ function addVehicle() {
   const icon = element('i', undefined, 'fas fa-trash-alt');
   icon.setAttribute('aria-hidden', 'true');
   remove.append(icon);
-  remove.onclick = () => { row.remove(); byId('add-vehicle').disabled = false; clearEstimate(); };
+  remove.onclick = () => { row.remove(); byId('add-vehicle').disabled = false; updatePriceDates(); };
   row.append(remove);
-  row.addEventListener('input', clearEstimate);
+  row.addEventListener('input', () => updatePriceDates());
   byId('vehicles').append(row);
   byId('add-vehicle').disabled = byId('vehicles').children.length >= 100;
-  clearEstimate();
+  calcMode();
 }
 function calcMode() {
   const volume = byId('calc-mode').value === 'volume';
@@ -300,8 +454,10 @@ function calcMode() {
   byId('volume').required = volume;
   byId('volume').disabled = !volume;
   byId('fleet').hidden = volume;
-  byId('vehicles').querySelectorAll('input').forEach(input => input.disabled = volume);
-  clearEstimate();
+  byId('volume-fuel-label').hidden = !volume;
+  byId('estimate-fuel').disabled = !volume || !catalog;
+  byId('vehicles').querySelectorAll('input, select').forEach(input => input.disabled = volume);
+  updatePriceDates();
 }
 async function estimate(event) {
   event.preventDefault();
@@ -310,32 +466,44 @@ async function estimate(event) {
   byId('calculate').disabled = true;
   byId('estimate-result').replaceChildren();
   byId('estimate-error').textContent = '';
-  const body = { sourceId: catalog.metadata.source, regionId: loaded.a, fuelCode: loaded.fuel, priceDate: byId('price-date').value };
+  const fleet = byId('calc-mode').value === 'fleet';
+  const body = { sourceId: catalog.metadata.source, regionId: loaded.a, priceDate: byId('price-date').value };
   if (loaded.b) body.comparisonRegionId = loaded.b;
-  if (byId('calc-mode').value === 'volume') body.volumeLiters = Number(byId('volume').value);
-  else body.vehicles = [...byId('vehicles').children].map(row =>
-    Object.fromEntries([...row.querySelectorAll('input')].map(input => [input.name, input.type === 'number' ? Number(input.value) : input.value])));
+  if (!fleet) { body.fuelCode = loaded.fuel; body.volumeLiters = Number(byId('volume').value); }
+  else body.vehicles = [...byId('vehicles').children].map(row => ({
+    templateId: Number(row.querySelector('[name="templateId"]').value),
+    fuelCode: row.querySelector('[name="fuelCode"]').value,
+    remainingLiters: Number(row.querySelector('[name="remainingLiters"]').value),
+    count: Number(row.querySelector('[name="count"]').value)
+  }));
   try {
-    const result = await postJson('/refueling/estimate', body);
+    const result = await postJson(fleet ? '/refueling/fleet-estimate' : '/refueling/estimate', body);
     if (id !== estimateSerial || selection !== loaded) return;
     const box = element('div', undefined, 'result');
     const volume = element('div');
     volume.append(element('span', 'Нужно топлива'), element('strong', money(result.totalLiters) + ' л'));
     const cost = element('div');
     cost.append(element('span', regionName(result.regionId)), element('strong', money(result.estimatedCost) + ' ₽'),
-      element('p', money(result.pricePerLiter) + ' ₽/л · ' + dateText(result.priceDate)));
+      element('p', 'На ' + dateText(result.priceDate)));
+    const budgets = fleet ? result.fuelBudgets : [result];
+    budgets.forEach(budget => {
+      const name = catalog.fuels.find(fuel => fuel.code === budget.fuelCode)?.name || budget.fuelCode;
+      cost.append(element('p', name + ': ' + money(budget.totalLiters) + ' л × ' + money(budget.pricePerLiter) + ' ₽/л = ' + money(budget.estimatedCost) + ' ₽'));
+    });
     box.append(volume, cost);
-    if (result.comparison) {
+    const comparison = fleet ? (result.comparisonRegionId ? { regionId: result.comparisonRegionId,
+      estimatedCost: result.comparisonEstimatedCost, difference: result.difference } : null) : result.comparison;
+    if (comparison) {
       const other = element('div');
-      other.append(element('span', regionName(result.comparison.regionId)), element('strong', money(result.comparison.estimatedCost) + ' ₽'),
-        element('p', 'Разница бюджетов: ' + money(result.comparison.difference) + ' ₽'));
+      other.append(element('span', regionName(comparison.regionId)), element('strong', money(comparison.estimatedCost) + ' ₽'),
+        element('p', 'Разница бюджетов: ' + money(comparison.difference) + ' ₽'));
       box.append(other);
     }
     byId('estimate-result').replaceChildren(box);
   } catch (error) {
     if (id === estimateSerial) byId('estimate-error').textContent = error.message;
   } finally {
-    if (id === estimateSerial) byId('calculate').disabled = !loaded || !byId('price-date').value;
+    if (id === estimateSerial) byId('calculate').disabled = !loaded || !byId('price-date').value || byId('price-date').disabled;
   }
 }
 
@@ -357,7 +525,7 @@ function setupNavigation() {
   syncButtons();
   new MutationObserver(syncButtons).observe(sidebar, { attributes: true, attributeFilter: ['class'] });
   mobile.addEventListener('change', setSize);
-  const links = [...sidebar.querySelectorAll('.nav-link')];
+  const links = [...sidebar.querySelectorAll('.nav-link[href^="#"]')];
   function activate(target) {
     links.forEach(link => {
       const selected = link.getAttribute('href') === target;
@@ -378,9 +546,10 @@ function setupNavigation() {
 }
 
 byId('filters').addEventListener('submit', load);
-byId('all-period').onclick = () => { availablePeriod(); load(); };
+byId('all-period').onclick = () => { availablePeriod(true); load(); };
 byId('source-select').onchange = async () => {
   const previousSource = catalog?.metadata.source;
+  byId('estimate-fuel').disabled = true;
   [...byId('filters').elements].forEach(control => control.disabled = true);
   byId('add-vehicle').disabled = true;
   serial++;
@@ -389,23 +558,38 @@ byId('source-select').onchange = async () => {
   try {
     await loadCatalog(byId('source-select').value);
     [...byId('filters').elements].forEach(control => control.disabled = false);
-    byId('add-vehicle').disabled = false;
+    byId('add-vehicle').disabled = !vehicleTemplates.length || byId('vehicles').children.length >= 100;
     await load();
   } catch (error) {
     if (previousSource) byId('source-select').value = previousSource;
+    byId('estimate-fuel').disabled = !catalog || byId('calc-mode').value !== 'volume';
     status('Не удалось открыть набор: ' + error.message, true);
     [...byId('filters').elements].forEach(control => control.disabled = false);
-    byId('add-vehicle').disabled = false;
+    byId('add-vehicle').disabled = !vehicleTemplates.length || byId('vehicles').children.length >= 100;
     byId('show').disabled = !catalog;
   }
 };
-byId('region').onchange = () => { updateFuels(); availablePeriod(); invalidate(); };
-byId('fuel').onchange = () => { updateRegionsB(); availablePeriod(); invalidate(); };
-['region-b', 'from', 'to'].forEach(id => byId(id).onchange = invalidate);
+byId('region').onchange = () => { updateFuels(); availablePeriod(); load(); };
+['fuel', 'estimate-fuel'].forEach(id => byId(id).onchange = event => {
+  byId('fuel').value = event.target.value;
+  byId('estimate-fuel').value = byId('fuel').value;
+  updateRegionsB();
+  availablePeriod();
+  load();
+});
+byId('region-b').onchange = () => load();
+['from', 'to'].forEach(id => byId(id).onchange = invalidate);
 byId('calc-mode').onchange = calcMode;
 byId('price-date').onchange = clearEstimate;
 byId('volume').oninput = clearEstimate;
-byId('add-vehicle').onclick = addVehicle;
+byId('add-vehicle').onclick = () => addVehicle();
+document.addEventListener('vehicle-template-created', async event => {
+  try {
+    await loadVehicleTemplates();
+    if (!byId('vehicles').children.length) addVehicle(event.detail.id);
+    else clearEstimate();
+  } catch (error) { byId('template-note').textContent = error.message; }
+});
 byId('estimate-form').addEventListener('submit', estimate);
 setupNavigation();
 
@@ -414,8 +598,10 @@ async function init() {
   byId('add-vehicle').disabled = true;
   try {
     await loadCatalog('ROSSTAT_PFO_WEEKLY');
+    try { await loadVehicleTemplates(); }
+    catch (error) { byId('template-note').textContent = error.message; }
     [...byId('filters').elements].forEach(control => control.disabled = false);
-    byId('add-vehicle').disabled = false;
+    byId('add-vehicle').disabled = !vehicleTemplates.length;
     addVehicle();
     calcMode();
     byId('all-period').disabled = false;

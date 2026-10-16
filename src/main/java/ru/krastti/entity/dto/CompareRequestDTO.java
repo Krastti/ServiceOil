@@ -9,6 +9,6 @@ public record CompareRequestDTO(String sourceId, @NotBlank String regionA,
                                @NotBlank String regionB, @NotBlank String fuelCode,
                                @NotNull LocalDate from, @NotNull LocalDate to) {
     public CompareRequestDTO {
-        if (sourceId == null) sourceId = "ROSSTAT_PFO";
+        if (sourceId == null) sourceId = "ROSSTAT_PFO_WEEKLY";
     }
 }

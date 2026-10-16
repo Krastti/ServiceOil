@@ -1,6 +1,9 @@
 **
 !Dockerfile
 !pom.xml
+!docker/
+!docker/certs/
+!docker/certs/*.pem
 !src/
 !src/**
 !data/

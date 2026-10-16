@@ -18,7 +18,13 @@ public class ImportFailureJournal {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(String source, OffsetDateTime started, int rejected) {
+        record(source, started, rejected, "INVALID_IMPORT");
+    }
+
+    /** Фиксирует заранее определённый код сбоя, не записывая сообщение поставщика. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void record(String source, OffsetDateTime started, int rejected, String code) {
         imports.saveAndFlush(new ImportRunEntity(source, started, OffsetDateTime.now(ZoneOffset.UTC),
-                ImportStatus.FAILED, 0, Math.max(1, rejected), "INVALID_IMPORT"));
+                ImportStatus.FAILED, 0, Math.max(1, rejected), code));
     }
 }

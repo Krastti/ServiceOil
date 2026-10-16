@@ -54,7 +54,7 @@ public class CsvImportService {
         int[] rejected = {0};
         try {
             validateSource(source);
-            var rows = read(content.read(), rejected);
+            var rows = read(content.read(), rejected, source.id());
             writer.write(source, rows, started);
             return rows.size();
         } catch (Exception exception) {
@@ -89,7 +89,7 @@ public class CsvImportService {
     }
 
     /** Проверяет структуру CSV и преобразует записи в DTO строк цены. */
-    private static List<Row> read(String csv, int[] rejected) {
+    private static List<Row> read(String csv, int[] rejected, String sourceId) {
         require(csv != null && csv.getBytes(StandardCharsets.UTF_8).length <= 10_000_000);
         var records = parseCsv(csv);
         require(!records.isEmpty() && records.removeFirst().equals(CsvColumn.headers()));
@@ -99,17 +99,18 @@ public class CsvImportService {
         var keys = new HashSet<String>();
         for (var fields : records) {
             try {
-                rows.add(readRow(fields, keys));
+                rows.add(readRow(fields, keys, sourceId));
             } catch (RuntimeException exception) {
                 rejected[0]++;
             }
         }
         require(rejected[0] == 0);
+        require(rows.stream().map(Row::frequency).distinct().count() == 1);
         return rows;
     }
 
     /** Проверяет одну CSV-запись и создает DTO строки цены. */
-    private static Row readRow(List<String> fields, Set<String> keys) {
+    private static Row readRow(List<String> fields, Set<String> keys, String sourceId) {
         require(fields.size() == CsvColumn.values().length && fields.stream().noneMatch(String::isBlank));
 
         var regionCode = REGION_CODE.read(fields);
@@ -130,7 +131,11 @@ public class CsvImportService {
         require(currency.equals("RUB") && unit.equals("LITER"));
 
         var uri = URI.create(sourceUrl);
-        require("https".equals(uri.getScheme()) && uri.getHost() != null
+        boolean rosstatHttp = "ROSSTAT_PFO_WEEKLY".equals(sourceId)
+                && "http".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null
+                && (uri.getHost().equalsIgnoreCase("rosstat.gov.ru")
+                    || uri.getHost().toLowerCase(Locale.ROOT).endsWith(".rosstat.gov.ru"));
+        require(("https".equalsIgnoreCase(uri.getScheme()) || rosstatHttp) && uri.getHost() != null
                 && uri.getUserInfo() == null && sourceUrl.length() <= 2000);
         require(keys.add(regionCode + ":" + fuelCode + ":" + observedOn));
 
