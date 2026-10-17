@@ -15,6 +15,9 @@ services:
       timeout: 3s
       retries: 12
 
+  nginx:
+    image: nginx
+
   app:
     image: serviceoil:local
     build:

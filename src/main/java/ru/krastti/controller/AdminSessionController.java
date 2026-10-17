@@ -10,7 +10,8 @@ import ru.krastti.entity.dto.response.AdminSessionResponseDTO;
 /** Сведения о сессии для формы входа и административной панели. */
 @RestController
 public class AdminSessionController {
-    /** Возвращает свежий CSRF-токен до входа и после смены сессии; ответ не кешируется. */
+    /** Возвращает свежий CSRF-токен до входа и после смены сессии.
+     *  Ответ не кешируется. */
     @GetMapping("/api/v1/admin/session")
     public ResponseEntity<AdminSessionResponseDTO> session(Authentication authentication, CsrfToken csrf) {
         boolean admin = authentication != null && authentication.isAuthenticated()
