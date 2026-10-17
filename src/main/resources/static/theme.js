@@ -36,7 +36,9 @@
   apply(preferredTheme());
   document.addEventListener('DOMContentLoaded', () => {
     syncButton();
-    document.getElementById('theme-toggle').addEventListener('click', () => {
+    const button = document.getElementById('theme-toggle');
+    if (!button) return;
+    button.addEventListener('click', () => {
       const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
       explicitChoice = true;
       try { localStorage.setItem(key, next); } catch { /* Keep the choice for this page. */ }

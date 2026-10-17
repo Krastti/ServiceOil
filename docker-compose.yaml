@@ -16,7 +16,20 @@ services:
       retries: 12
 
   nginx:
-    image: nginx
+    image: serviceoil-nginx:local
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${SERVICEOIL_PORT}:80"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   app:
     image: serviceoil:local
@@ -31,6 +44,7 @@ services:
       SERVICEOIL_DB_USER: serviceoil
       SERVICEOIL_DB_PASSWORD: ${SERVICEOIL_DB_PASSWORD}
       SERVER_ADDRESS: 0.0.0.0
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
       ROSSTAT_WEEKLY_INDEX_URL: ${ROSSTAT_WEEKLY_INDEX_URL}
       ROSSTAT_WEEKLY_SCHEDULE_ENABLED: ${ROSSTAT_WEEKLY_SCHEDULE_ENABLED}
       ROSSTAT_WEEKLY_CRON: ${ROSSTAT_WEEKLY_CRON}
@@ -44,8 +58,6 @@ services:
       SERVICEOIL_CACHE_LOG_LEVEL: ${SERVICEOIL_CACHE_LOG_LEVEL:-INFO}
     volumes:
       - serviceoil_logs:/app/logs
-    ports:
-      - "127.0.0.1:${SERVICEOIL_PORT}:8080"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
       interval: 5s

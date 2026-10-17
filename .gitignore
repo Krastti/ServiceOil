@@ -1,5 +1,4 @@
 HELP.md
-README-template.md
 AGENTS.md
 target/
 !**/src/main/**/target/
