@@ -86,9 +86,9 @@ Compose соберёт приложение, запустит PostgreSQL и пр
 
 | Страница | Адрес по умолчанию |
 | --- | --- |
-| Мониторинг цен и калькулятор | [http://localhost:8080](http://localhost:8080) |
-| Вход администратора | [http://localhost:8080/login](http://localhost:8080/login) |
-| Панель администратора | [http://localhost:8080/admin](http://localhost:8080/admin) |
+| Мониторинг цен и калькулятор | [http://localhost:8080](http://localhost:8086) |
+| Вход администратора | [http://localhost:8080/login](http://localhost:8086/login) |
+| Панель администратора | [http://localhost:8080/admin](http://localhost:8086/admin) |
 
 Если в окружении или `.env` задан `SERVICEOIL_PORT`, используйте этот порт вместо `8080`.
 
