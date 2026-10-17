@@ -16,7 +16,7 @@ import ru.krastti.exception.InvalidImportException;
 import ru.krastti.exception.ImportJournalUnavailableException;
 import org.springframework.dao.PessimisticLockingFailureException;
 
-@RestControllerAdvice
+@RestControllerAdvice(annotations = RestController.class)
 public class ApiErrorHandler {
 
     @ExceptionHandler(RosstatSourceException.class)

@@ -238,6 +238,22 @@ html[data-theme="dark"] {
 .login-brand { display: block; margin-bottom: 1.75rem; color: var(--accent, #4e73df); font-size: 1.6rem; font-weight: 800; text-align: center; }
 .login-brand:hover { text-decoration: none; }
 .login-card { border-radius: 1rem; }
+.error-page #content-wrapper { min-width: 0; min-height: 100vh; }
+.error-page #content { display: flex; flex-direction: column; }
+.error-main { display: flex; flex: 1; align-items: center; justify-content: center; padding-bottom: 2rem; }
+.error-card { width: 100%; max-width: 760px; }
+.error-card .card-body { padding: clamp(1.5rem, 5vw, 4rem); }
+.error-code { margin: 0 0 1rem; font-size: clamp(4rem, 12vw, 8rem); font-weight: 800; line-height: 1; letter-spacing: -.04em; }
+.error-description { max-width: 34rem; margin: 1.25rem auto 1rem; line-height: 1.75; }
+.error-recommendation { background: #f8f9fc; border-radius: .4rem; padding: 1rem; margin: 0 0 1.75rem; line-height: 1.75; }
+.error-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: .75rem; }
+.error-actions .btn { min-height: 2.75rem; }
+[data-theme="dark"] .error-recommendation { background: var(--surface-inset); color: var(--text); }
+@media (max-width: 575px) {
+  .error-card h1 { font-size: 1.35rem; line-height: 1.4; }
+  .error-actions { flex-direction: column; }
+  .error-actions .btn { width: 100%; }
+}
 .login-icon { width: 3rem; height: 3rem; display: grid; place-items: center; border-radius: .9rem; color: var(--accent, #4e73df); background: rgba(78,115,223,.1); font-size: 1.35rem; }
 [data-theme="dark"] .modal-content { background: var(--surface); color: var(--text); }
 [data-theme="dark"] .modal .close { color: var(--text); text-shadow: none; }

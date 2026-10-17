@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#4e73df">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{status}} — {{title}} · ServiceOil</title>
+  <script src="/theme.js?v=2.1.0"></script>
+  <link rel="stylesheet" href="/vendor/fontawesome-free/css/all.min.css">
+  <link rel="stylesheet" href="/vendor/sb-admin-2/css/sb-admin-2.min.css">
+  <link rel="stylesheet" href="/app.css?v=3.3.0">
+  <script src="/vendor/jquery/jquery.min.js" defer></script>
+  <script src="/vendor/bootstrap/bootstrap.bundle.min.js" defer></script>
+  <script src="/vendor/jquery-easing/jquery.easing.min.js" defer></script>
+  <script src="/vendor/sb-admin-2/js/sb-admin-2.min.js" defer></script>
+  <script src="/browser-error.js?v=1.0.0" defer></script>
+</head>
+<body id="page-top" class="error-page">
+  <a class="skip-link" href="#main-content">Перейти к содержимому</a>
+  <div id="wrapper">
+    <nav aria-label="Основная навигация">
+      <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark" id="accordionSidebar">
+        <li class="brand-item"><a class="sidebar-brand d-flex align-items-center justify-content-center" href="/" aria-label="ServiceOil — главная"><span class="sidebar-brand-icon rotate-n-15"><i class="fas fa-gas-pump" aria-hidden="true"></i></span><span class="sidebar-brand-text mx-3">ServiceOil</span></a></li>
+        <li class="nav-divider"><hr class="sidebar-divider my-0"></li>
+        <li class="nav-item"><a class="nav-link" href="/#overview"><i class="fas fa-fw fa-tachometer-alt" aria-hidden="true"></i><span>Обзор цен</span></a></li>
+        <li class="nav-divider"><hr class="sidebar-divider"></li>
+        <li class="sidebar-heading">Рабочая панель</li>
+        <li class="nav-item"><a class="nav-link" href="/#history"><i class="fas fa-fw fa-chart-area" aria-hidden="true"></i><span>Динамика и сравнение</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="/#calculator"><i class="fas fa-fw fa-calculator" aria-hidden="true"></i><span>Бюджет заправки</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="/#sources"><i class="fas fa-fw fa-database" aria-hidden="true"></i><span>Источники данных</span></a></li>
+        <li class="nav-divider"><hr class="sidebar-divider"></li>
+        <li class="nav-item"><a class="nav-link" href="/login"><i class="fas fa-fw fa-user-lock" aria-hidden="true"></i><span>Вход администратора</span></a></li>
+        <li class="text-center sidebar-collapse"><button class="rounded-circle border-0" id="sidebarToggle" type="button" aria-label="Свернуть боковую панель" aria-controls="accordionSidebar" aria-expanded="true"></button></li>
+      </ul>
+    </nav>
+    <div id="content-wrapper" class="d-flex flex-column">
+      <div id="content">
+        <header class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow-sm">
+          <button id="sidebarToggleTop" class="btn btn-link rounded-circle mr-3 d-md-none" type="button" aria-label="Открыть боковую панель" aria-controls="accordionSidebar" aria-expanded="false"><i class="fas fa-bars" aria-hidden="true"></i></button>
+          <div class="topbar-title"><span class="text-gray-800 font-weight-bold">ServiceOil</span><span class="small text-gray-500 d-none d-lg-inline ml-3">Топливо · регионы · бюджет</span></div>
+          <div class="ml-auto d-flex align-items-center topbar-actions">
+            <button id="theme-toggle" type="button" class="btn theme-toggle" aria-label="Включить тёмную тему" aria-pressed="false" title="Включить тёмную тему"><i class="fas fa-moon" aria-hidden="true"></i><span class="theme-toggle-label d-none d-lg-inline ml-2">Тёмная тема</span></button>
+          </div>
+        </header>
+        <main id="main-content" class="container-fluid error-main" tabindex="-1">
+          <section class="card shadow border-0 error-card" aria-labelledby="error-title" aria-describedby="error-description error-recommendation">
+            <div class="card-body text-center">
+              <p class="error-code text-primary" aria-label="Код ошибки {{status}}">{{status}}</p>
+              <h1 id="error-title" class="h3 text-gray-800">{{title}}</h1>
+              <p id="error-description" class="error-description text-gray-600">{{description}}</p>
+              <p id="error-recommendation" class="error-recommendation">{{recommendation}}</p>
+              <div class="error-actions">
+                <a class="btn btn-primary" href="/"><i class="fas fa-home mr-2" aria-hidden="true"></i>На главную</a>
+                <a class="btn btn-outline-primary" href="/login" {{loginHidden}}><i class="fas fa-sign-in-alt mr-2" aria-hidden="true"></i>Войти</a>
+                <button class="btn btn-outline-primary" type="button" id="retry-error" {{retryHidden}}><i class="fas fa-redo mr-2" aria-hidden="true"></i>Обновить страницу</button>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+      <footer class="sticky-footer bg-white"><div class="container my-auto"><div class="footer-content small text-gray-600"><span>ServiceOil</span><span>Региональные цены на топливо</span></div></div></footer>
+    </div>
+  </div>
+</body>
+</html>

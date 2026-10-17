@@ -1,5 +1,6 @@
 package ru.krastti.config;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +38,7 @@ public class SecurityConfiguration {
         RequestMatcher adminApi = request -> request.getRequestURI().startsWith(request.getContextPath() + "/api/v1/admin/");
         return http
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/v1/admin/session", "/login", "/login.html", "/login.js").permitAll()
                         .requestMatchers("/admin", "/admin/**", "/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().permitAll())
