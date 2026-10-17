@@ -4,6 +4,8 @@
 !docker/
 !docker/certs/
 !docker/certs/*.pem
+!docker/nginx/
+!docker/nginx/**
 !src/
 !src/**
 !data/

@@ -15,17 +15,13 @@ body { color: #5a5c69; font-family: "Nunito", "Segoe UI", Arial, sans-serif; }
 .sidebar.toggled .sidebar-note { display: none; }
 .sidebar .nav-item .nav-link { line-height: 1.55; }
 .topbar-title { font-size: .85rem; }
-.topbar-source { font-size: .8rem; }
 .topbar-actions { gap: 1rem; }
-.topbar-actions .topbar-divider { margin: 0 .25rem; }
 .theme-toggle { color: #626b80; border: 1px solid #e0e4ef; background: #f8f9fc; min-height: 2.25rem; padding: .4rem .65rem; border-radius: .45rem; white-space: nowrap; }
 .theme-toggle:hover { background: #edf0f8; color: #3d5280; border-color: #c8d2e7; }
 .theme-toggle:focus { box-shadow: 0 0 0 .2rem rgba(78,115,223,.2); }
 .archive-badge { display: inline-flex; align-items: center; gap: .5rem; color: #555b6b; font-size: .75rem; white-space: nowrap; }
 .archive-dot { height: .45rem; width: .45rem; border-radius: 50%; background: #f6c23e; }
-.topbar .topbar-divider { margin: 0 1.25rem; }
 main section { scroll-margin-top: 1.5rem; }
-.page-heading p { font-size: .88rem; }
 .page-heading { gap: .75rem; }
 .card { border-radius: .4rem; }
 .card-header { gap: .5rem; }
@@ -52,7 +48,6 @@ label { color: #555b6b; font-size: .77rem; font-weight: 700; margin-bottom: .45r
 #chart { display: block; width: 100%; height: auto; min-height: 220px; max-height: 340px; }
 #chart text { font: 12px "Segoe UI", Arial, sans-serif; fill: #71778b; }
 #chart circle:focus { stroke: #2e3150; stroke-width: 3; outline: none; }
-.comparison-note { background: #f8f9fc; border-left: 3px solid #4e73df; padding: .8rem 1rem; font-size: .78rem; line-height: 1.7; }
 .data-table summary { cursor: pointer; }
 .data-table table { font-size: .8rem; }
 .data-table th, .data-table td { white-space: nowrap; padding: .8rem; }
@@ -62,7 +57,7 @@ label { color: #555b6b; font-size: .77rem; font-weight: 700; margin-bottom: .45r
 .vehicle label { margin-bottom: 0; }
 .vehicle input, .vehicle select { margin-top: .45rem; }
 .vehicle-remove { width: 2.5rem; padding: 0; min-height: 2.65rem; }
-.calc-bottom { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.calc-bottom { display: flex; justify-content: flex-end; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .result { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 1rem; background: #f0f5ff; border: 1px solid #dce5fc; border-radius: .35rem; padding: 1.25rem; margin-top: 1.25rem; }
 .result span { font-size: .72rem; color: #5d6780; }
 .result strong { display: block; color: #2e4d9b; font-size: 1.45rem; margin: .45rem 0; font-variant-numeric: tabular-nums; }
@@ -174,7 +169,6 @@ html[data-theme="dark"] {
 [data-theme="dark"] a:hover { color: #c1d0f6; }
 [data-theme="dark"] .border,
 [data-theme="dark"] .border-top,
-[data-theme="dark"] .topbar .topbar-divider { border-color: var(--line) !important; }
 [data-theme="dark"] .border-left-primary { border-left-color: #728ec4 !important; }
 [data-theme="dark"] .border-left-success { border-left-color: #70aa95 !important; }
 [data-theme="dark"] .border-left-info { border-left-color: #77a5b3 !important; }
@@ -210,7 +204,6 @@ html[data-theme="dark"] {
 [data-theme="dark"] .chart-legend { color: var(--text); }
 [data-theme="dark"] #chart text { fill: var(--muted); }
 [data-theme="dark"] #chart circle:focus { stroke: #e0c692; }
-[data-theme="dark"] .comparison-note,
 [data-theme="dark"] .source-disclaimer { background: #283345; color: #bac7dc; border-left-color: #738fc5; }
 [data-theme="dark"] .app-status.alert-light { background: var(--surface); color: var(--muted); }
 [data-theme="dark"] .alert-danger { background: #3b2933; border-color: #6b4553; color: #efb9c0; }
@@ -226,7 +219,6 @@ html[data-theme="dark"] {
 [data-theme="dark"] .result strong { color: #b8cbf0; }
 [data-theme="dark"] .result span { color: #b0bfd6; }
 [data-theme="dark"] .skip-link { background: var(--surface-raised); }
-[data-theme="dark"] .scroll-to-top { background: #465572; color: #dae2ef; }
 
 [hidden] { display: none !important; }
 .sidebar-action { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; }

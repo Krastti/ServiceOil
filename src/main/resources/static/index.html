@@ -9,12 +9,12 @@
   <script src="theme.js?v=2.1.0"></script>
   <link rel="stylesheet" href="vendor/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="vendor/sb-admin-2/css/sb-admin-2.min.css">
-  <link rel="stylesheet" href="app.css?v=2.3.0">
+  <link rel="stylesheet" href="app.css?v=2.3.2">
   <script src="vendor/jquery/jquery.min.js" defer></script>
   <script src="vendor/bootstrap/bootstrap.bundle.min.js" defer></script>
   <script src="vendor/jquery-easing/jquery.easing.min.js" defer></script>
   <script src="vendor/sb-admin-2/js/sb-admin-2.min.js" defer></script>
-  <script src="app.js?v=2.3.0" defer></script>
+  <script src="app.js?v=2.3.2" defer></script>
   <script src="admin.js?v=3.3.0" defer></script>
 </head>
 <body id="page-top">
@@ -46,18 +46,17 @@
       <div id="content">
         <header class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow-sm">
           <button id="sidebarToggleTop" class="btn btn-link rounded-circle mr-3 d-md-none" type="button" aria-label="Открыть боковую панель" aria-controls="accordionSidebar" aria-expanded="false"><i class="fas fa-bars" aria-hidden="true"></i></button>
-          <div class="topbar-title"><span class="text-gray-800 font-weight-bold">Панель хозяйства</span><span class="small text-gray-500 d-none d-lg-inline ml-3">Топливо · регионы · бюджет</span></div>
+          <div class="topbar-title"><span class="text-gray-800 font-weight-bold">Панель хозяйства</span></div>
           <div class="ml-auto d-flex align-items-center topbar-actions">
             <button id="theme-toggle" type="button" class="btn theme-toggle" aria-label="Включить тёмную тему" aria-pressed="false" title="Включить тёмную тему"><i class="fas fa-moon" aria-hidden="true"></i><span class="theme-toggle-label d-none d-lg-inline ml-2">Тёмная тема</span></button>
-            <span class="archive-badge"><span class="archive-dot" aria-hidden="true"></span>Архив цен</span><span class="topbar-divider d-none d-sm-block"></span><a class="topbar-source text-gray-600" href="#sources" aria-label="О данных"><i class="fas fa-info-circle mr-sm-2" aria-hidden="true"></i><span class="d-none d-sm-inline">О данных</span></a>
+            <span class="archive-badge"><span class="archive-dot" aria-hidden="true"></span>Архив цен</span>
           </div>
         </header>
 
         <main id="main-content" class="container-fluid" tabindex="-1">
           <section id="overview" aria-labelledby="page-title">
             <div class="page-heading d-flex flex-wrap align-items-center justify-content-between mb-4">
-              <div><h1 id="page-title" class="h3 mb-2 text-gray-800">Мониторинг цен на топливо</h1><p class="text-gray-600 mb-0">Сравнивайте регионы и планируйте бюджет заправки техники.</p></div>
-              <a class="btn btn-primary shadow-sm mt-3 mt-xl-0" href="#calculator"><i class="fas fa-calculator fa-sm mr-2" aria-hidden="true"></i>Рассчитать бюджет</a>
+              <h1 id="page-title" class="h3 mb-0 text-gray-800">Мониторинг цен на топливо</h1>
             </div>
             <section class="card shadow mb-4 border-0" aria-labelledby="filters-heading">
               <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between"><h2 id="filters-heading" class="h6 m-0 font-weight-bold text-primary"><i class="fas fa-sliders-h mr-2" aria-hidden="true"></i>Параметры анализа</h2><span class="small text-gray-600 mt-1 mt-sm-0" id="coverage">Загружаем доступный период…</span></div>
@@ -81,11 +80,10 @@
           </section>
 
           <section id="history" class="card shadow mb-4 border-0" aria-labelledby="history-heading">
-            <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between"><h2 id="history-heading" class="h6 m-0 font-weight-bold text-primary">Динамика региональных цен</h2><span class="badge badge-light border text-gray-600">Рубли за литр</span></div>
+            <div class="card-header py-3"><h2 id="history-heading" class="h6 m-0 font-weight-bold text-primary">Динамика региональных цен</h2></div>
             <div class="card-body">
               <div id="legend" class="chart-legend" aria-label="Регионы на графике"></div>
               <div class="price-chart"><svg id="chart" viewBox="0 0 800 290" role="img" aria-label="История региональных цен"></svg></div>
-              <p class="comparison-note mb-3" id="comparison-note">Точки показывают даты наблюдения. Пропуски не заменяются нулями.</p>
               <details class="data-table"><summary class="text-primary font-weight-bold small">Показать значения в таблице</summary><div class="table-responsive"><table class="table table-bordered table-hover mb-0 mt-3"><caption class="sr-only">Опубликованные цены по регионам и датам</caption><thead class="thead-light"><tr><th scope="col">Регион</th><th scope="col">Дата наблюдения</th><th scope="col">Цена, ₽/л</th></tr></thead><tbody id="points-table"></tbody></table></div></details>
             </div>
           </section>
@@ -104,7 +102,7 @@
                       <div class="form-group col-12" id="volume-label" hidden><label for="volume">Объём закупки, л</label><input id="volume" class="form-control" type="number" min="0.01" max="1000000" step="any" value="300"></div>
                     </div>
                     <div id="fleet"><p id="template-note" class="small text-gray-600" role="status">Загружаем шаблоны техники…</p><div id="vehicles"></div><div class="d-flex flex-wrap align-items-center vehicle-actions"><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-vehicle" disabled><i class="fas fa-plus mr-2" aria-hidden="true"></i>Добавить технику</button><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-vehicle-template" data-toggle="modal" data-target="#vehicle-template-modal" hidden><i class="fas fa-plus mr-2" aria-hidden="true"></i>Добавить шаблон техники</button><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="manage-vehicle-templates" data-toggle="modal" data-target="#vehicle-templates-modal" hidden><i class="fas fa-list mr-2" aria-hidden="true"></i>Управление шаблонами</button></div></div>
-                    <div class="calc-bottom mt-4 pt-3 border-top"><p class="small text-gray-600 mb-0"><i class="fas fa-info-circle mr-1" aria-hidden="true"></i>(Ёмкость − остаток) × количество</p><button type="submit" id="calculate" class="btn btn-primary" disabled>Рассчитать бюджет<i class="fas fa-arrow-right ml-2 fa-sm" aria-hidden="true"></i></button></div>
+                    <div class="calc-bottom mt-4 pt-3 border-top"><button type="submit" id="calculate" class="btn btn-primary" disabled>Рассчитать бюджет<i class="fas fa-arrow-right ml-2 fa-sm" aria-hidden="true"></i></button></div>
                   </form>
                   <p id="estimate-error" role="alert" class="text-danger small mt-3 mb-0"></p>
                   <div id="estimate-result" aria-live="polite"></div>
@@ -121,10 +119,9 @@
           <noscript><div class="alert alert-warning">Для загрузки цен и расчёта бюджета включите JavaScript в браузере.</div></noscript>
         </main>
       </div>
-      <footer class="sticky-footer bg-white"><div class="container-fluid"><div class="footer-content small text-gray-600"><span>ServiceOil · Топливо для вашего хозяйства</span><span>Интерфейс на основе <a href="https://github.com/StartBootstrap/startbootstrap-sb-admin-2" target="_blank" rel="noopener noreferrer">SB Admin 2</a></span></div></div></footer>
+      <footer class="sticky-footer bg-white"><div class="container-fluid"><div class="footer-content small text-gray-600"><span>ServiceOil</span><span>Интерфейс на основе <a href="https://github.com/StartBootstrap/startbootstrap-sb-admin-2" target="_blank" rel="noopener noreferrer">SB Admin 2</a></span></div></div></footer>
     </div>
   </div>
-  <a class="scroll-to-top rounded" href="#page-top" aria-label="Вернуться наверх"><i class="fas fa-angle-up" aria-hidden="true"></i></a>
   <div class="modal fade" id="rosstat-import-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="import-title" aria-describedby="import-description">
     <div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content">
       <div class="modal-header"><h2 class="modal-title h5" id="import-title">Импорт недельных цен</h2><button type="button" class="close import-close" data-dismiss="modal" aria-label="Закрыть"><span aria-hidden="true">&times;</span></button></div>

@@ -100,7 +100,6 @@ function invalidate() {
   resetResults();
   byId('show').disabled = false;
   byId('history').setAttribute('aria-busy', 'false');
-  byId('comparison-note').textContent = 'Нажмите «Показать», чтобы обновить выбранные данные.';
   status('Фильтры изменены. Нажмите «Показать».');
 }
 
@@ -283,7 +282,6 @@ async function load(event) {
   const fuel = byId('fuel').value, from = byId('from').value, to = byId('to').value;
   if (!from || !to || from > to || (Date.parse(to) - Date.parse(from)) / 86400000 >= 366) {
     status('Выберите период от 1 до 366 дней: начало не позже конца.', true);
-    byId('comparison-note').textContent = 'Укажите корректный период и нажмите «Показать».';
     byId('show').disabled = false;
     byId('history').setAttribute('aria-busy', 'false');
     return;
@@ -306,17 +304,12 @@ async function load(event) {
     loaded.datesByFuel.set(fuel, dates);
     await updatePriceDates();
     if (id !== serial) return;
-    byId('comparison-note').textContent = comparison
-      ? (comparison.comparison ? 'На общей дате ' + dateText(comparison.comparison.date) + ' разница ' + money(comparison.comparison.difference) + ' ₽/л (основной регион минус второй).' : comparison.warnings.join(' '))
-      : 'Точки — даты наблюдения. Пропуски не заменяются нулями. Для сравнения выберите второй регион.';
-    byId('comparison-note').textContent += ' Пунктир обозначает пропуски недельных наблюдений.';
     const hasPoints = series.some(item => item.points.length);
     status(hasPoints ? 'Показаны сохранённые недельные наблюдения.'
       : 'За выбранный период данных нет. Выберите даты из доступного набора.');
   } catch (error) {
     if (error.name !== 'AbortError' && id === serial) {
       status('Не удалось обновить цены: ' + error.message, true);
-      byId('comparison-note').textContent = 'Цены не загружены. Повторите запрос кнопкой «Показать».';
     }
   } finally {
     if (id === serial) {
@@ -621,7 +614,6 @@ async function init() {
     status('Не удалось открыть набор: ' + error.message, true);
     byId('coverage').textContent = 'Доступный период не загружен';
     byId('data-mode').textContent = 'Данные не загружены';
-    byId('comparison-note').textContent = 'Обновите страницу, чтобы повторить загрузку набора.';
     byId('show').disabled = true;
   }
 }
