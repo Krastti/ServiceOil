@@ -13,6 +13,8 @@ public @interface AuditAction {
 
     enum Action {
         VEHICLE_TEMPLATE_CREATED,
+        VEHICLE_TEMPLATE_UPDATED,
+        VEHICLE_TEMPLATE_DELETED,
         ADMIN_ACCOUNT_CHANGED
     }
 }

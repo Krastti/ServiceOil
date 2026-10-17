@@ -232,6 +232,10 @@ html[data-theme="dark"] {
 .sidebar-action { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; }
 .sidebar-action:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
 .modal-content { border: 0; border-radius: .75rem; }
+.templates-table th, .templates-table td { vertical-align: middle; }
+.templates-table td:first-child { min-width: 9rem; overflow-wrap: anywhere; }
+.templates-table td:last-child { min-width: 10rem; }
+.templates-table .btn { margin: .15rem .3rem .15rem 0; }
 .modal-header, .modal-footer { border-color: var(--line); }
 .login-page { min-height: 100vh; background: var(--bg, #f4f6fa); }
 .login-shell { width: min(100% - 2rem, 460px); margin: 7vh auto; }

@@ -13,10 +13,11 @@ import ru.krastti.entity.dto.response.VehicleTemplateResponseDTO;
 import ru.krastti.repository.VehicleTemplateRepository;
 import ru.krastti.repository.FuelTypeRepository;
 import ru.krastti.exception.InvalidRequestException;
+import ru.krastti.exception.ApiException;
 import ru.krastti.logging.AuditAction;
 import ru.krastti.logging.LogOperation;
 
-/** Чтение и создание шаблонов техники; права на создание проверяет Spring Security. */
+/** Справочник шаблонов техники; изменения доступны только администратору. */
 @Service
 @RequiredArgsConstructor
 public class VehicleTemplateService {
@@ -38,6 +39,39 @@ public class VehicleTemplateService {
         var fuel = fuels.findByCode(request.fuelCode())
                 .orElseThrow(() -> new InvalidRequestException("Неизвестный вид топлива."));
         return dto(templates.save(new VehicleTemplateEntity(request.name().strip(), request.tankCapacity(), fuel)));
+    }
+
+    /** Сохраняет новые параметры существующего шаблона и сбрасывает кеш справочника. */
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    @AuditAction(AuditAction.Action.VEHICLE_TEMPLATE_UPDATED)
+    @CacheEvict(value = "vehicle-templates", allEntries = true)
+    public VehicleTemplateResponseDTO update(long id, VehicleTemplateRequestDTO request) {
+        var template = requireTemplate(id);
+        var fuel = fuels.findByCode(request.fuelCode())
+                .orElseThrow(() -> new InvalidRequestException("Неизвестный вид топлива."));
+        template.update(request.name().strip(), request.tankCapacity(), fuel);
+        return dto(templates.save(template));
+    }
+
+    /** Удаляет шаблон; неизвестный идентификатор возвращает ту же ошибку, что и расчёт парка. */
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    @AuditAction(AuditAction.Action.VEHICLE_TEMPLATE_DELETED)
+    @CacheEvict(value = "vehicle-templates", allEntries = true)
+    public void delete(long id) {
+        templates.delete(requireTemplate(id));
+    }
+
+    private VehicleTemplateEntity requireTemplate(long id) {
+        if (id > 0 && id <= Integer.MAX_VALUE) {
+            return templates.findById((int) id).orElseThrow(VehicleTemplateService::unknownTemplate);
+        }
+        throw unknownTemplate();
+    }
+
+    private static ApiException unknownTemplate() {
+        return new ApiException(404, "UNKNOWN_VEHICLE_TEMPLATE", "Шаблон техники не найден. Обновите список.");
     }
 
     private static VehicleTemplateResponseDTO dto(VehicleTemplateEntity template) {

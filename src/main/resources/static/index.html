@@ -9,13 +9,13 @@
   <script src="theme.js?v=2.1.0"></script>
   <link rel="stylesheet" href="vendor/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="vendor/sb-admin-2/css/sb-admin-2.min.css">
-  <link rel="stylesheet" href="app.css?v=2.2.0">
+  <link rel="stylesheet" href="app.css?v=2.3.0">
   <script src="vendor/jquery/jquery.min.js" defer></script>
   <script src="vendor/bootstrap/bootstrap.bundle.min.js" defer></script>
   <script src="vendor/jquery-easing/jquery.easing.min.js" defer></script>
   <script src="vendor/sb-admin-2/js/sb-admin-2.min.js" defer></script>
-  <script src="app.js?v=2.2.0" defer></script>
-  <script src="admin.js?v=3.2.0" defer></script>
+  <script src="app.js?v=2.3.0" defer></script>
+  <script src="admin.js?v=3.3.0" defer></script>
 </head>
 <body id="page-top">
   <a class="skip-link" href="#main-content">Перейти к содержимому</a>
@@ -103,7 +103,7 @@
                       <div class="form-group col-md-4"><label for="price-date">Цена на дату</label><select id="price-date" class="custom-select" required></select></div>
                       <div class="form-group col-12" id="volume-label" hidden><label for="volume">Объём закупки, л</label><input id="volume" class="form-control" type="number" min="0.01" max="1000000" step="any" value="300"></div>
                     </div>
-                    <div id="fleet"><p id="template-note" class="small text-gray-600" role="status">Загружаем шаблоны техники…</p><div id="vehicles"></div><div class="d-flex flex-wrap align-items-center vehicle-actions"><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-vehicle" disabled><i class="fas fa-plus mr-2" aria-hidden="true"></i>Добавить технику</button><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-vehicle-template" data-toggle="modal" data-target="#vehicle-template-modal" hidden><i class="fas fa-plus mr-2" aria-hidden="true"></i>Добавить шаблон техники</button></div></div>
+                    <div id="fleet"><p id="template-note" class="small text-gray-600" role="status">Загружаем шаблоны техники…</p><div id="vehicles"></div><div class="d-flex flex-wrap align-items-center vehicle-actions"><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-vehicle" disabled><i class="fas fa-plus mr-2" aria-hidden="true"></i>Добавить технику</button><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-vehicle-template" data-toggle="modal" data-target="#vehicle-template-modal" hidden><i class="fas fa-plus mr-2" aria-hidden="true"></i>Добавить шаблон техники</button><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="manage-vehicle-templates" data-toggle="modal" data-target="#vehicle-templates-modal" hidden><i class="fas fa-list mr-2" aria-hidden="true"></i>Управление шаблонами</button></div></div>
                     <div class="calc-bottom mt-4 pt-3 border-top"><p class="small text-gray-600 mb-0"><i class="fas fa-info-circle mr-1" aria-hidden="true"></i>(Ёмкость − остаток) × количество</p><button type="submit" id="calculate" class="btn btn-primary" disabled>Рассчитать бюджет<i class="fas fa-arrow-right ml-2 fa-sm" aria-hidden="true"></i></button></div>
                   </form>
                   <p id="estimate-error" role="alert" class="text-danger small mt-3 mb-0"></p>
@@ -152,6 +152,28 @@
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light template-close" data-dismiss="modal">Закрыть</button><button type="submit" id="template-submit" class="btn btn-primary">Сохранить шаблон</button></div>
       </form>
+    </div></div>
+  </div>
+  <div class="modal fade" id="vehicle-templates-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="templates-title">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg" role="document"><div class="modal-content">
+      <div class="modal-header"><h2 class="modal-title h5" id="templates-title">Шаблоны техники</h2><button type="button" class="close templates-close" data-dismiss="modal" aria-label="Закрыть"><span aria-hidden="true">&times;</span></button></div>
+      <div class="modal-body">
+        <div id="templates-feedback" class="alert" role="status" aria-live="polite" hidden></div>
+        <a id="templates-login-link" href="/login" hidden>Войти снова</a>
+        <p id="templates-empty" class="text-gray-600" hidden>Шаблонов техники пока нет. Добавьте первый шаблон кнопкой «Добавить шаблон техники».</p>
+        <div class="table-responsive"><table id="templates-table" class="table table-bordered templates-table mb-0" hidden><caption class="sr-only">Все сохранённые шаблоны техники</caption><thead><tr><th scope="col">Название</th><th scope="col">Ёмкость, л</th><th scope="col">Топливо</th><th scope="col">Действия</th></tr></thead><tbody id="templates-list"></tbody></table></div>
+        <form id="template-edit-form" class="border-top mt-3 pt-3" hidden>
+          <h3 class="h6 font-weight-bold">Редактирование шаблона</h3>
+          <div class="form-group"><label for="template-edit-name">Название техники</label><input id="template-edit-name" class="form-control" maxlength="100" required></div>
+          <div class="form-row"><div class="form-group col-sm-6"><label for="template-edit-capacity">Ёмкость бака, л</label><input id="template-edit-capacity" class="form-control" type="number" min="0.01" max="1000000" step="0.01" required></div><div class="form-group col-sm-6"><label for="template-edit-fuel">Топливо по умолчанию</label><select id="template-edit-fuel" class="custom-select" required><option value="DIESEL">Дизельное топливо</option><option value="AI92">АИ-92</option></select></div></div>
+          <button type="submit" class="btn btn-primary btn-sm">Сохранить изменения</button><button type="button" id="template-edit-cancel" class="btn btn-light btn-sm ml-2">Отмена</button>
+        </form>
+        <div id="template-delete-confirmation" class="alert alert-warning mt-3 mb-0" hidden>
+          <p id="template-delete-question"></p><p class="small">Шаблон также будет убран из текущего расчёта, если он там выбран.</p>
+          <button type="button" id="template-delete-submit" class="btn btn-danger btn-sm">Удалить шаблон</button><button type="button" id="template-delete-cancel" class="btn btn-light btn-sm ml-2">Отмена</button>
+        </div>
+      </div>
+      <div class="modal-footer"><button type="button" id="templates-refresh" class="btn btn-outline-primary">Обновить список</button><button type="button" class="btn btn-light templates-close" data-dismiss="modal">Закрыть</button></div>
     </div></div>
   </div>
   <div class="modal fade" id="admin-account-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="account-title" aria-describedby="account-description">

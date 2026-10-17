@@ -3,7 +3,7 @@ package ru.krastti.entity.dto.request;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
-/** Поля нового шаблона; создавать шаблоны разрешено только администратору. */
+/** Поля создания и редактирования шаблона; изменять справочник может только администратор. */
 public record VehicleTemplateRequestDTO(
         @NotBlank @Size(max = 100) String name,
         @NotNull @DecimalMin(value = "0", inclusive = false) @DecimalMax("1000000")

@@ -336,17 +336,27 @@ function clearEstimate() {
 async function loadVehicleTemplates() {
   const response = await fetch('/api/v1/vehicle-templates', { cache: 'no-store' });
   if (!response.ok) throw Error('Не удалось загрузить шаблоны техники. Обновите страницу.');
-  vehicleTemplates = await response.json();
+  applyVehicleTemplates(await response.json());
+}
+function applyVehicleTemplates(templates) {
+  vehicleTemplates = templates;
   byId('template-note').textContent = vehicleTemplates.length
     ? 'Выберите шаблон и топливо для каждой строки. Ёмкость бака берётся из шаблона.'
     : 'Шаблонов техники пока нет. Администратор может добавить их в своей консоли. Доступен расчёт по объёму закупки.';
-  byId('add-vehicle').disabled = !vehicleTemplates.length || byId('vehicles').children.length >= 100;
+  let removed = 0;
   byId('vehicles').querySelectorAll('.vehicle').forEach(row => {
     const select = row.querySelector('[name="templateId"]');
     const selected = select.value;
+    const template = vehicleTemplates.find(item => String(item.id) === selected);
+    if (!template) { row.remove(); removed++; return; }
     select.replaceChildren(...vehicleTemplates.map(template => option(String(template.id), template.name)));
     select.value = selected;
+    row.querySelector('[name="tankCapacity"]').value = template.tankCapacity;
+    row.querySelector('[name="remainingLiters"]').max = template.tankCapacity;
   });
+  byId('add-vehicle').disabled = !vehicleTemplates.length || byId('vehicles').children.length >= 100;
+  if (removed) byId('template-note').textContent += ' Строки с удалёнными шаблонами убраны из расчёта: ' + removed + '.';
+  calcMode();
 }
 function updateVehicleFuels(row) {
   if (!catalog) return;
@@ -590,6 +600,7 @@ document.addEventListener('vehicle-template-created', async event => {
     else clearEstimate();
   } catch (error) { byId('template-note').textContent = error.message; }
 });
+document.addEventListener('vehicle-templates-changed', event => applyVehicleTemplates(event.detail));
 byId('estimate-form').addEventListener('submit', estimate);
 setupNavigation();
 

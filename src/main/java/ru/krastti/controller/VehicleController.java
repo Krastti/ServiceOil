@@ -33,6 +33,19 @@ public class VehicleController {
         return templates.create(request);
     }
 
+    /** Заменяет название, ёмкость и топливо шаблона; требует сессии администратора и CSRF. */
+    @PutMapping("/admin/vehicle-templates/{id}")
+    public VehicleTemplateResponseDTO update(@PathVariable long id, @Valid @RequestBody VehicleTemplateRequestDTO request) {
+        return templates.update(id, request);
+    }
+
+    /** Удаляет шаблон из справочника; неизвестный идентификатор возвращает 404. */
+    @DeleteMapping("/admin/vehicle-templates/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable long id) {
+        templates.delete(id);
+    }
+
     @PostMapping("/refueling/fleet-estimate")
     public FleetEstimateResponseDTO estimate(@Valid @RequestBody FleetEstimateRequestDTO request) {
         return fleet.estimate(request);

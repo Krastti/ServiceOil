@@ -24,6 +24,11 @@ public class VehicleTemplateEntity {
     private FuelTypeEntity fuel;
 
     public VehicleTemplateEntity(String name, BigDecimal tankCapacity, FuelTypeEntity fuel) {
+        update(name, tankCapacity, fuel);
+    }
+
+    /** Заменяет параметры шаблона, сохраняя его идентификатор. */
+    public void update(String name, BigDecimal tankCapacity, FuelTypeEntity fuel) {
         this.name = name;
         this.tankCapacity = tankCapacity;
         this.fuel = fuel;
