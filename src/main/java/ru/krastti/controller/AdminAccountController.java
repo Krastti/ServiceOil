@@ -12,7 +12,7 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
-import ru.krastti.entity.dto.AdminAccountRequestDTO;
+import ru.krastti.entity.dto.request.AdminAccountRequestDTO;
 import ru.krastti.service.AdminAccountService;
 
 /** Смена реквизитов своей учётной записи с завершением всех её действующих сессий. */

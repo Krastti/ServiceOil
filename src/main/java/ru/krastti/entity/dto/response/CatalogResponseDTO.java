@@ -1,4 +1,9 @@
-package ru.krastti.entity.dto;
+package ru.krastti.entity.dto.response;
+
+import ru.krastti.entity.dto.Availability;
+import ru.krastti.entity.dto.Fuel;
+import ru.krastti.entity.dto.Metadata;
+import ru.krastti.entity.dto.Region;
 
 import java.util.List;
 

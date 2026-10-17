@@ -9,9 +9,9 @@ import jakarta.persistence.LockModeType;
 import ru.krastti.entity.AdminEntity;
 
 /** Поиск учётной записи для стандартной аутентификации Spring Security. */
-public interface AdminRepository extends JpaRepository<AdminEntity, Long> {
+public interface AdminRepository extends JpaRepository<AdminEntity, Integer> {
     Optional<AdminEntity> findByUsername(String username);
-    boolean existsByUsernameAndIdNot(String username, Long id);
+    boolean existsByUsernameAndIdNot(String username, Integer id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select admin from AdminEntity admin where admin.username = :username")

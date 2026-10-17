@@ -3,10 +3,13 @@ package ru.krastti.repository;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.*;
 import ru.krastti.entity.FuelTypeEntity;
 
-public interface FuelTypeRepository extends JpaRepository<FuelTypeEntity, String> {
+public interface FuelTypeRepository extends JpaRepository<FuelTypeEntity, Integer> {
+    Optional<FuelTypeEntity> findByCode(String code);
+
     /** Общая блокировка импорта, включая создание новых источников и регионов. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "30000"))

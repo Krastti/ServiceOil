@@ -1,4 +1,6 @@
-package ru.krastti.entity.dto;
+package ru.krastti.entity.dto.response;
+
+import ru.krastti.entity.dto.Metadata;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,4 +22,4 @@ import java.time.LocalDate;
  * @param deltaPercent изменение относительно первой цены в процентах с двумя знаками; null при числе точек меньше двух
  */
 public record SummaryResponseDTO(Metadata metadata, String regionId, String fuelCode, LocalDate from, LocalDate to,
-                      int pointCount, BigDecimal price, LocalDate firstDate, LocalDate lastDate, BigDecimal delta, BigDecimal deltaPercent) {}
+                                 int pointCount, BigDecimal price, LocalDate firstDate, LocalDate lastDate, BigDecimal delta, BigDecimal deltaPercent) {}

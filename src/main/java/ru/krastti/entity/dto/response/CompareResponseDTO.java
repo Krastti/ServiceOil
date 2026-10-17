@@ -1,4 +1,8 @@
-package ru.krastti.entity.dto;
+package ru.krastti.entity.dto.response;
+
+import ru.krastti.entity.dto.Comparison;
+import ru.krastti.entity.dto.Metadata;
+import ru.krastti.entity.dto.PricePoint;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,5 +24,5 @@ import java.util.List;
  * @param warnings предупреждения, относящиеся к сравнению
  */
 public record CompareResponseDTO(Metadata metadata, String regionA, String regionB, String fuelCode, LocalDate from, LocalDate to,
-                      List<PricePoint> historyA, List<PricePoint> historyB, List<LocalDate> commonDates,
-                      Comparison comparison, List<String> warnings) {}
+                                 List<PricePoint> historyA, List<PricePoint> historyB, List<LocalDate> commonDates,
+                                 Comparison comparison, List<String> warnings) {}

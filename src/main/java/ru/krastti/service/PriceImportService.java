@@ -57,7 +57,7 @@ public class PriceImportService {
 
     /** Находит источник или создаёт его, проверяя неизменность его метаданных. */
     private DataSourceEntity findOrCreateDataSource(Source source) {
-        var dataSource = sources.findById(source.id()).orElse(null);
+        var dataSource = sources.findByCode(source.id()).orElse(null);
         if (dataSource == null) {
             dataSource = new DataSourceEntity(source.id(), source.name(), DataMode.valueOf(source.dataMode()), source.methodology());
             entities.persist(dataSource);
@@ -70,11 +70,11 @@ public class PriceImportService {
     }
 
     /** Загружает цены источника и проверяет, что их периодичность совпадает с CSV. */
-    private Map<RegionalPriceId, RegionalPriceEntity> loadExistingPrices(String sourceId, Frequency frequency) {
-        var existingPrices = new HashMap<RegionalPriceId, RegionalPriceEntity>();
-        for (var price : prices.findAllByIdSourceId(sourceId)) {
+    private Map<PriceObservationKey, RegionalPriceEntity> loadExistingPrices(String sourceId, Frequency frequency) {
+        var existingPrices = new HashMap<PriceObservationKey, RegionalPriceEntity>();
+        for (var price : prices.findAllBySourceCode(sourceId)) {
             require(price.getFrequency() == frequency);
-            existingPrices.put(price.getId(), price);
+            existingPrices.put(PriceObservationKey.of(price), price);
         }
 
         return existingPrices;
@@ -85,7 +85,7 @@ public class PriceImportService {
         var regionByCode = new HashMap<String, RegionEntity>();
         var codes = rows.stream().map(Row::region).distinct().toList();
         for (int offset = 0; offset < codes.size(); offset += 500) {
-            regions.findAllById(codes.subList(offset, Math.min(offset + 500, codes.size())))
+            regions.findByCodeIn(codes.subList(offset, Math.min(offset + 500, codes.size())))
                     .forEach(r -> regionByCode.put(r.getCode(), r));
         }
 
@@ -114,7 +114,7 @@ public class PriceImportService {
             require(region.getName().equals(row.name()));
         }
 
-        var key = new RegionalPriceId(context.source().id(), row.region(), row.fuel(), row.date());
+        var key = new PriceObservationKey(context.source().id(), row.region(), row.fuel(), row.date());
         var previous = context.existingPrices().get(key);
         if (previous == null) {
             var price = new RegionalPriceEntity(context.dataSource(), region, context.fuelByCode().get(row.fuel()),
@@ -139,7 +139,7 @@ public class PriceImportService {
             DataSourceEntity dataSource,
             Frequency frequency,
             Map<String, FuelTypeEntity> fuelByCode,
-            Map<RegionalPriceId, RegionalPriceEntity> existingPrices,
+            Map<PriceObservationKey, RegionalPriceEntity> existingPrices,
             Map<String, RegionEntity> regionByCode) {
     }
 

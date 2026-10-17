@@ -9,7 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.krastti.entity.VehicleTemplateEntity;
-import ru.krastti.entity.dto.*;
+import ru.krastti.entity.dto.request.EstimateRequestDTO;
+import ru.krastti.entity.dto.request.FleetEstimateRequestDTO;
+import ru.krastti.entity.dto.request.FleetVehicleRequestDTO;
+import ru.krastti.entity.dto.response.EstimateResponseDTO;
+import ru.krastti.entity.dto.response.FleetEstimateResponseDTO;
 import ru.krastti.exception.ApiException;
 import ru.krastti.exception.InvalidRequestException;
 import ru.krastti.repository.VehicleTemplateRepository;
@@ -24,11 +28,14 @@ public class FleetEstimateService {
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public FleetEstimateResponseDTO estimate(FleetEstimateRequestDTO request) {
         var ids = request.vehicles().stream().map(FleetVehicleRequestDTO::templateId).distinct().toList();
-        var saved = templates.findAllById(ids).stream()
+        if (ids.stream().anyMatch(id -> id > Integer.MAX_VALUE)) {
+            throw new ApiException(404, "UNKNOWN_VEHICLE_TEMPLATE", "Шаблон техники не найден. Обновите список.");
+        }
+        var saved = templates.findAllById(ids.stream().map(Long::intValue).toList()).stream()
                 .collect(Collectors.toMap(VehicleTemplateEntity::getId, Function.identity()));
         var volumes = new TreeMap<String, BigDecimal>();
         for (var row : request.vehicles()) {
-            var template = saved.get(row.templateId());
+            var template = saved.get(row.templateId().intValue());
             if (template == null) throw new ApiException(404, "UNKNOWN_VEHICLE_TEMPLATE", "Шаблон техники не найден. Обновите список.");
             if (row.remainingLiters().compareTo(template.getTankCapacity()) > 0) {
                 throw new InvalidRequestException("Остаток не может превышать ёмкость бака: " + template.getName());

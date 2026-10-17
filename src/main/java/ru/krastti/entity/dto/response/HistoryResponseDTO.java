@@ -1,4 +1,7 @@
-package ru.krastti.entity.dto;
+package ru.krastti.entity.dto.response;
+
+import ru.krastti.entity.dto.Metadata;
+import ru.krastti.entity.dto.PricePoint;
 
 import java.time.LocalDate;
 import java.util.List;

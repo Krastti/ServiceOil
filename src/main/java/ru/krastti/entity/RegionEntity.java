@@ -8,7 +8,7 @@ import lombok.AccessLevel;
 /**
  * Таблица {@code region} хранит справочник регионов, для которых загружаются цены.
  * Каждая запись содержит уникальный код региона и его название.
- * Код используется для привязки цен в таблице {@code regional_price} к региону.
+ * Связи используют числовой id, а уникальный код сохраняется для API и импорта.
  */
 @Entity
 @Table(name = "region")
@@ -16,8 +16,10 @@ import lombok.AccessLevel;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RegionEntity {
 
-    @Id
-    @Column(length = 16)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(length = 16, nullable = false, unique = true)
     private String code;
 
     @Column(nullable = false, length = 200)

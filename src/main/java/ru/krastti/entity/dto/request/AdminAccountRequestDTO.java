@@ -1,4 +1,4 @@
-package ru.krastti.entity.dto;
+package ru.krastti.entity.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.krastti.entity.dto.AdminAccountRequestDTO;
+import ru.krastti.entity.dto.request.AdminAccountRequestDTO;
 import ru.krastti.exception.ApiException;
 import ru.krastti.exception.InvalidRequestException;
 import ru.krastti.repository.AdminRepository;

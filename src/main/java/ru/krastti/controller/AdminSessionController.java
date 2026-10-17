@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
-import ru.krastti.entity.dto.AdminSessionResponseDTO;
+import ru.krastti.entity.dto.response.AdminSessionResponseDTO;
 
 /** Сведения о сессии для формы входа и административной панели. */
 @RestController

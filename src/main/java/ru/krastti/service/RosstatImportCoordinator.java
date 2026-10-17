@@ -8,14 +8,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.krastti.exception.RosstatSourceException;
-import ru.krastti.repository.ScheduledImportLockRepository;
+import ru.krastti.repository.ImportAdvisoryLock;
 
 /** Общая блокировка ручного и автоматического импорта; запись цен остаётся в CsvImportService. */
 @Service
 @RequiredArgsConstructor
 public class RosstatImportCoordinator {
     public static final String SOURCE_ID = "ROSSTAT_PFO_WEEKLY";
-    private final ScheduledImportLockRepository locks;
+    private final ImportAdvisoryLock locks;
     private final RosstatWeeklyImportService importer;
     private final ImportFailureJournal failures;
 
@@ -30,7 +30,7 @@ public class RosstatImportCoordinator {
     }
 
     private RosstatWeeklyImportService.ImportResult run(Supplier<RosstatWeeklyImportService.ImportResult> action) {
-        locks.lockWeeklyImport().orElseThrow(() -> new IllegalStateException("IMPORT_LOCK_MISSING"));
+        locks.acquire();
         var started = OffsetDateTime.now(ZoneOffset.UTC);
         try {
             return action.get();

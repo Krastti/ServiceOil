@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.krastti.entity.dto.request.EstimateRequestDTO;
+import ru.krastti.entity.dto.response.*;
 import ru.krastti.exception.*;
 import ru.krastti.entity.PersistenceValues.DataMode;
 import ru.krastti.entity.PersistenceValues.ImportStatus;
@@ -220,7 +222,7 @@ public class PriceService {
     }
 
     private void requireCombination(String source, String region, String fuel) {
-        if (!prices.existsByIdSourceIdAndIdRegionCodeAndIdFuelCode(source, region, fuel)) {
+        if (!prices.existsBySourceCodeAndRegionCodeAndFuelCode(source, region, fuel)) {
             throw new UnknownCombinationException("Для источника " + source + " нет набора данных по региону " + region + " и топливу " + fuel);
         }
     }
@@ -276,7 +278,7 @@ public class PriceService {
     }
 
     private Metadata metadata(String sourceId) {
-        var source = sources.findById(sourceId).orElseThrow(UnknownSourceException::new);
+        var source = sources.findByCode(sourceId).orElseThrow(UnknownSourceException::new);
 
         // Сохраняем прежний MIN по текстовым значениям, а не порядок enum.
         var dataFrequency = prices.findFrequencies(sourceId).stream()
@@ -291,13 +293,13 @@ public class PriceService {
             warnings.add("Архивные опубликованные данные; цена региона оценивает бюджет и не гарантирует предложение АЗС.");
         }
 
-        boolean latestImportFailed = imports.findFirstBySourceIdOrderByIdDesc(sourceId)
+        boolean latestImportFailed = imports.findFirstBySourceCodeOrderByIdDesc(sourceId)
                 .map(run -> run.getStatus() == ImportStatus.FAILED).orElse(false);
         if (latestImportFailed) {
             warnings.add("Последнее обновление не удалось. Показан ранее сохранённый набор.");
         }
 
-        return new Metadata(source.getId(), source.getName(), source.getDataMode().name(),"LITER", "RUB",
+        return new Metadata(source.getCode(), source.getName(), source.getDataMode().name(),"LITER", "RUB",
                 dataFrequency, source.getMethodology(), source.getLastImportedAt(), warnings);
     }
 

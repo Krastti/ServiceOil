@@ -19,9 +19,12 @@ import ru.krastti.entity.PersistenceValues.DataMode;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DataSourceEntity {
 
-    @Id
-    @Column(length = 64)
-    private String id;
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    /** Устойчивый код источника в API и CSV; не зависит от внутреннего PK. */
+    @Column(length = 64, nullable = false, unique = true)
+    private String code;
 
     @Column(nullable = false, length = 200)
     private String name;
@@ -36,8 +39,8 @@ public class DataSourceEntity {
     @Column(name = "last_imported_at")
     private OffsetDateTime lastImportedAt;
 
-    public DataSourceEntity(String id, String name, DataMode dataMode, String methodology) {
-        this.id = id;
+    public DataSourceEntity(String code, String name, DataMode dataMode, String methodology) {
+        this.code = code;
         this.name = name;
         this.dataMode = dataMode;
         this.methodology = methodology;

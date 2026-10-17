@@ -12,34 +12,35 @@ import ru.krastti.entity.PersistenceValues.*;
 /**
  * Таблица {@code regional_price} хранит историю региональных цен на топливо.
  * Каждая запись представляет цену из конкретного источника для одного региона,
- * вида топлива и даты наблюдения. Эта комбинация образует составной первичный ключ.
+ * вида топлива и даты наблюдения. Эта комбинация защищена UNIQUE, а PK — числовой id.
  * Дополнительно хранятся периодичность наблюдений, цена за литр в рублях,
  * ссылка на исходные данные и время импорта записи.
  * Источник, регион и вид топлива связаны со справочниками {@code data_source},
  * {@code region} и {@code fuel_type} внешними ключами.
  */
 @Entity
-@Table(name = "regional_price")
+@Table(name = "regional_price", uniqueConstraints = @UniqueConstraint(
+        name = "uq_regional_price_observation", columnNames = {"source_id", "region_id", "fuel_type_id", "observed_on"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RegionalPriceEntity {
-    @EmbeddedId
-    private RegionalPriceId id;
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-    @MapsId("sourceId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "source_id", nullable = false)
     private DataSourceEntity source;
 
-    @MapsId("regionCode")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "region_code", nullable = false)
+    @JoinColumn(name = "region_id", nullable = false)
     private RegionEntity region;
 
-    @MapsId("fuelCode")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "fuel_code", nullable = false)
+    @JoinColumn(name = "fuel_type_id", nullable = false)
     private FuelTypeEntity fuel;
+
+    @Column(name = "observed_on", nullable = false)
+    private LocalDate observedOn;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
@@ -65,7 +66,7 @@ public class RegionalPriceEntity {
     public RegionalPriceEntity(DataSourceEntity source, RegionEntity region, FuelTypeEntity fuel,
                                LocalDate observedOn, Frequency frequency, BigDecimal price,
                                String sourceUrl, OffsetDateTime importedAt) {
-        this.id = new RegionalPriceId(source.getId(), region.getCode(), fuel.getCode(), observedOn);
+        this.observedOn = observedOn;
         this.source = source;
         this.region = region;
         this.fuel = fuel;

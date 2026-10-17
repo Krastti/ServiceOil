@@ -3,8 +3,8 @@ package ru.krastti.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import ru.krastti.entity.dto.RosstatImportRequestDTO;
-import ru.krastti.entity.dto.RosstatImportResponseDTO;
+import ru.krastti.entity.dto.request.RosstatImportRequestDTO;
+import ru.krastti.entity.dto.response.RosstatImportResponseDTO;
 import ru.krastti.service.RosstatImportCoordinator;
 
 /** Административный API синхронного импорта недельных наблюдений Росстата. */

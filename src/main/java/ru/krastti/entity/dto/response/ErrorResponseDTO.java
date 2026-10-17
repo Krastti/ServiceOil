@@ -1,4 +1,4 @@
-package ru.krastti.entity.dto;
+package ru.krastti.entity.dto.response;
 
 /**
  * Единое тело ответа API при ошибке обработки запроса.

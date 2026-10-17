@@ -1,4 +1,4 @@
-package ru.krastti.entity.dto;
+package ru.krastti.entity.dto.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

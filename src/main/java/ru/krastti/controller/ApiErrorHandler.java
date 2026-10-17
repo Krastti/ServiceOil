@@ -1,6 +1,6 @@
 package ru.krastti.controller;
 
-import ru.krastti.entity.dto.ErrorResponseDTO;
+import ru.krastti.entity.dto.response.ErrorResponseDTO;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import ru.krastti.entity.dto.request.AdminAccountRequestDTO;
 import ru.krastti.exception.ApiException;
 import ru.krastti.exception.RosstatSourceException;
 import ru.krastti.exception.InvalidImportException;
@@ -48,7 +49,7 @@ public class ApiErrorHandler {
             MissingServletRequestParameterException.class,MethodArgumentTypeMismatchException.class})
     public ResponseEntity<ErrorResponseDTO> invalid(Exception exception) {
         if (exception instanceof MethodArgumentNotValidException invalid
-                && invalid.getBindingResult().getTarget() instanceof ru.krastti.entity.dto.AdminAccountRequestDTO) {
+                && invalid.getBindingResult().getTarget() instanceof AdminAccountRequestDTO) {
             return ResponseEntity.badRequest().body(new ErrorResponseDTO("INVALID_REQUEST",
                     "Проверьте логин (3–64 символа), текущий пароль и новый пароль (от 8 символов, если указан)."));
         }

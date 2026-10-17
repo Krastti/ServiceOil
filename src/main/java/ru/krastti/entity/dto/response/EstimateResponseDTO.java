@@ -1,4 +1,7 @@
-package ru.krastti.entity.dto;
+package ru.krastti.entity.dto.response;
+
+import ru.krastti.entity.dto.BudgetComparison;
+import ru.krastti.entity.dto.Metadata;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,5 +21,5 @@ import java.time.LocalDate;
  * @param comparison расчёт для другого региона; null, если сравнение не запрошено
  */
 public record EstimateResponseDTO(Metadata metadata, String regionId, String fuelCode, LocalDate priceDate,
-                       BigDecimal totalLiters, BigDecimal pricePerLiter, BigDecimal estimatedCost,
-                       String sourceUrl, BudgetComparison comparison) {}
+                                  BigDecimal totalLiters, BigDecimal pricePerLiter, BigDecimal estimatedCost,
+                                  String sourceUrl, BudgetComparison comparison) {}

@@ -122,10 +122,19 @@ docker compose down
 
 Параметры задаются переменными окружения или в локальном файле `.env` в корне проекта.
 
+Для первого запуска скопируйте [шаблон настроек](.env.example) и при необходимости измените значения:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Если `.env` уже существует, редактируйте его напрямую. Локальный `.env` исключён из Git; `.env.example` содержит только пример настроек.
+
 | Переменная | По умолчанию | Назначение |
 | --- | --- | --- |
 | `SERVICEOIL_PORT` | `8080` | Порт сайта на компьютере |
 | `SERVICEOIL_DB_PASSWORD` | `serviceoil_local` | Пароль PostgreSQL для приложения и БД |
+| `ROSSTAT_WEEKLY_INDEX_URL` | `https://rosstat.gov.ru/compendium/document/50798` | Индекс публикаций Росстата |
 | `ROSSTAT_WEEKLY_SCHEDULE_ENABLED` | `false` | Включение автоматического импорта |
 | `ROSSTAT_WEEKLY_CRON` | `0 0 10 * * THU` | Расписание: четверг, 10:00 |
 | `ROSSTAT_WEEKLY_ZONE` | `Europe/Moscow` | Часовой пояс расписания |

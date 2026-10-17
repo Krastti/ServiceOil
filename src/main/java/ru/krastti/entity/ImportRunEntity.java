@@ -12,7 +12,7 @@ import ru.krastti.entity.PersistenceValues.ImportStatus;
  * Каждая запись содержит идентификатор попытки, идентификатор источника,
  * время начала и завершения, результат ({@code SUCCESS} или {@code FAILED}),
  * количество импортированных и отклонённых строк и код ошибки при её наличии.
- * Идентификатор источника не связан внешним ключом с {@code data_source},
+ * Код источника не связан внешним ключом с {@code data_source},
  * чтобы можно было сохранить ошибку импорта даже для неизвестного источника.
  */
 @Entity
@@ -21,10 +21,10 @@ import ru.krastti.entity.PersistenceValues.ImportStatus;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ImportRunEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
-    @Column(name = "source_id", nullable = false, length = 64)
-    private String sourceId;
+    @Column(name = "source_code", nullable = false, length = 64)
+    private String sourceCode;
 
     @Column(name = "started_at", nullable = false)
     private OffsetDateTime startedAt;
@@ -44,9 +44,9 @@ public class ImportRunEntity {
     @Column(name = "error_code", length = 64)
     private String errorCode;
 
-    public ImportRunEntity(String sourceId, OffsetDateTime startedAt, OffsetDateTime finishedAt,
+    public ImportRunEntity(String sourceCode, OffsetDateTime startedAt, OffsetDateTime finishedAt,
                            ImportStatus status, int rowCount, int rejectedCount, String errorCode) {
-        this.sourceId = sourceId;
+        this.sourceCode = sourceCode;
         this.startedAt = startedAt;
         this.finishedAt = finishedAt;
         this.status = status;

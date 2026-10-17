@@ -4,7 +4,11 @@ import lombok.RequiredArgsConstructor;
 
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-import ru.krastti.entity.dto.*;
+import ru.krastti.entity.dto.request.CatalogRequestDTO;
+import ru.krastti.entity.dto.request.CompareRequestDTO;
+import ru.krastti.entity.dto.request.EstimateRequestDTO;
+import ru.krastti.entity.dto.request.PricePeriodRequestDTO;
+import ru.krastti.entity.dto.response.*;
 import ru.krastti.service.PriceService;
 
 /**

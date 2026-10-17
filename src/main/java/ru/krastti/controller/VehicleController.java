@@ -7,7 +7,10 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.krastti.entity.dto.*;
+import ru.krastti.entity.dto.request.FleetEstimateRequestDTO;
+import ru.krastti.entity.dto.request.VehicleTemplateRequestDTO;
+import ru.krastti.entity.dto.response.FleetEstimateResponseDTO;
+import ru.krastti.entity.dto.response.VehicleTemplateResponseDTO;
 import ru.krastti.service.FleetEstimateService;
 import ru.krastti.service.VehicleTemplateService;
 

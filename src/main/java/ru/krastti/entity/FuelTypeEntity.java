@@ -9,7 +9,7 @@ import lombok.AccessLevel;
  * Таблица {@code fuel_type} хранит справочник видов топлива.
  * Каждая запись содержит уникальный код топлива и его название,
  * например {@code DIESEL} — дизельное топливо или {@code AI92} — АИ-92.
- * Код используется для привязки цен в таблице {@code regional_price} к виду топлива.
+ * Связи используют числовой id, код остаётся уникальным обозначением топлива.
  */
 @Entity
 @Table(name = "fuel_type")
@@ -17,8 +17,10 @@ import lombok.AccessLevel;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FuelTypeEntity {
 
-    @Id
-    @Column(length = 32)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(length = 32, nullable = false, unique = true)
     private String code;
 
     @Column(nullable = false, length = 100)
