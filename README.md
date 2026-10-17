@@ -192,8 +192,6 @@ ROSSTAT_WEEKLY_SCHEDULE_ENABLED=true
 - [Источники данных](docs/DATA_SOURCES.md).
 - [Контракт OpenAPI](postman/specs/serviceoil.openapi.yaml).
 
-Каталоги `docs/` и `postman/` сейчас исключены через `.gitignore` и не входят в отслеживаемые файлы репозитория. Ссылки на эти материалы работают в полной локальной копии проекта.
-
 ## Автор
 
 [Ярослав · @Krastti](https://github.com/Krastti)
