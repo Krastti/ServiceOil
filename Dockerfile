@@ -31,7 +31,7 @@ CMD ["test"]
 
 FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /app
-COPY --from=build /workspace/target/ServiceOil-0.0.1-SNAPSHOT.jar ./serviceoil.jar
+COPY --from=build /workspace/target/ServiceOil-*.jar ./serviceoil.jar
 COPY docker/certs/russian-trusted-root-ca.pem /tmp/russian-trusted-root-ca.pem
 COPY docker/certs/russian-trusted-sub-ca-2024.pem /tmp/russian-trusted-sub-ca-2024.pem
 RUN test "$(openssl x509 -in /tmp/russian-trusted-root-ca.pem -noout -fingerprint -sha256 | cut -d= -f2)" = "D2:6D:2D:02:31:B7:C3:9F:92:CC:73:85:12:BA:54:10:35:19:E4:40:5D:68:B5:BD:70:3E:97:88:CA:8E:CF:31" \
@@ -42,6 +42,7 @@ RUN test "$(openssl x509 -in /tmp/russian-trusted-root-ca.pem -noout -fingerprin
     && keytool -importcert -trustcacerts -noprompt -alias rosstat-russian-trusted-sub-ca-2024 \
         -file /tmp/russian-trusted-sub-ca-2024.pem -keystore "$JAVA_HOME/lib/security/cacerts" -storepass changeit \
     && rm /tmp/russian-trusted-root-ca.pem /tmp/russian-trusted-sub-ca-2024.pem
+RUN mkdir -p /app/logs && chown 10001:10001 /app/logs
 USER 10001:10001
 EXPOSE 8080
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=70", "-jar", "/app/serviceoil.jar"]

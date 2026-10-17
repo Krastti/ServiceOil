@@ -9,6 +9,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import ru.krastti.entity.dto.request.AdminAccountRequestDTO;
 import ru.krastti.exception.ApiException;
 import ru.krastti.exception.RosstatSourceException;
@@ -18,6 +22,24 @@ import org.springframework.dao.PessimisticLockingFailureException;
 
 @RestControllerAdvice(annotations = RestController.class)
 public class ApiErrorHandler {
+
+    /** Отказ метода сервиса сохраняет тот же HTTP-контракт, что и фильтры безопасности. */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponseDTO> unauthenticated(AuthenticationException exception) {
+        return adminUnauthorized();
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDTO> forbidden(AccessDeniedException exception) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) return adminUnauthorized();
+        return ResponseEntity.status(403).body(new ErrorResponseDTO("ADMIN_FORBIDDEN", "Недостаточно прав для этого действия."));
+    }
+
+    private static ResponseEntity<ErrorResponseDTO> adminUnauthorized() {
+        return ResponseEntity.status(401).body(new ErrorResponseDTO("ADMIN_UNAUTHORIZED", "Войдите в учётную запись администратора."));
+    }
 
     @ExceptionHandler(RosstatSourceException.class)
     public ResponseEntity<ErrorResponseDTO> source(RosstatSourceException exception) {

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.krastti.logging.LogOperation;
 import ru.krastti.entity.dto.request.EstimateRequestDTO;
 import ru.krastti.entity.dto.response.*;
 import ru.krastti.exception.*;
@@ -36,6 +37,7 @@ public class PriceService {
      * @return каталог и сведения об источнике
      * @throws UnknownSourceException если источник не зарегистрирован
      */
+    @LogOperation(value = "prices.catalog", warnIfSlow = true)
     public CatalogResponseDTO catalog(String source) {
         return new CatalogResponseDTO(metadata(source), prices.findRegions(source), prices.findFuels(source), prices.findAvailability(source));
     }
@@ -54,6 +56,7 @@ public class PriceService {
      * @throws UnknownSourceException если источник не зарегистрирован
      * @throws UnknownCombinationException если для источника нет такого региона и топлива
      */
+    @LogOperation(value = "prices.history", warnIfSlow = true)
     public HistoryResponseDTO history(String source, String region, String fuel, LocalDate from, LocalDate to) {
         if(from.isAfter(to) || ChronoUnit.DAYS.between(from,to)>=366) {
             throw new InvalidRequestException("Выберите период от 1 до 366 дней: начало не позже конца");
@@ -79,6 +82,7 @@ public class PriceService {
      * @throws UnknownSourceException если источник не зарегистрирован
      * @throws UnknownCombinationException если для источника нет такого региона и топлива
      */
+    @LogOperation(value = "prices.summary", warnIfSlow = true)
     public SummaryResponseDTO summary(
             String source, String region, String fuel,
             LocalDate from, LocalDate to) {
@@ -127,6 +131,7 @@ public class PriceService {
      * @throws UnknownSourceException если источник не зарегистрирован
      * @throws UnknownCombinationException если для источника нет региона с таким топливом
      */
+    @LogOperation(value = "prices.compare", warnIfSlow = true)
     public CompareResponseDTO compare(
             String source, String regionA, String regionB, String fuel,
             LocalDate from, LocalDate to) {
@@ -182,6 +187,7 @@ public class PriceService {
      * @throws UnknownCombinationException если для источника нет цен выбранного топлива в регионе
      * @throws PriceNotFoundException если на выбранную дату нет наблюдения цены
      */
+    @LogOperation(value = "refueling.estimate", warnIfSlow = true)
     public EstimateResponseDTO estimate(EstimateRequestDTO request) {
         String sourceId = request.sourceId() == null
                 ? "ROSSTAT_PFO_WEEKLY"

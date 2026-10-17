@@ -16,6 +16,7 @@ import ru.krastti.entity.dto.response.EstimateResponseDTO;
 import ru.krastti.entity.dto.response.FleetEstimateResponseDTO;
 import ru.krastti.exception.ApiException;
 import ru.krastti.exception.InvalidRequestException;
+import ru.krastti.logging.LogOperation;
 import ru.krastti.repository.VehicleTemplateRepository;
 
 /** Рассчитывает смешанный парк по сохранённым ёмкостям и точным региональным ценам. */
@@ -26,6 +27,7 @@ public class FleetEstimateService {
     private final PriceService prices;
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    @LogOperation(value = "refueling.fleet-estimate", warnIfSlow = true)
     public FleetEstimateResponseDTO estimate(FleetEstimateRequestDTO request) {
         var ids = request.vehicles().stream().map(FleetVehicleRequestDTO::templateId).distinct().toList();
         if (ids.stream().anyMatch(id -> id > Integer.MAX_VALUE)) {

@@ -5,12 +5,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.krastti.entity.dto.request.AdminAccountRequestDTO;
 import ru.krastti.exception.ApiException;
 import ru.krastti.exception.InvalidRequestException;
 import ru.krastti.repository.AdminRepository;
+import ru.krastti.logging.AuditAction;
 
 /** Атомарно меняет реквизиты после проверки текущего пароля; открытые пароли не сохраняются. */
 @Service
@@ -21,6 +23,8 @@ public class AdminAccountService {
     private final PasswordEncoder passwords;
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN') and #p0 == authentication.name")
+    @AuditAction(AuditAction.Action.ADMIN_ACCOUNT_CHANGED)
     public void change(String currentUsername, AdminAccountRequestDTO request) {
         var admin = admins.findForUpdate(currentUsername)
                 .filter(account -> account.isEnabled())

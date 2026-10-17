@@ -5,9 +5,12 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.event.Level;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.krastti.exception.RosstatSourceException;
+import ru.krastti.logging.LogOperation;
 import ru.krastti.repository.ImportAdvisoryLock;
 
 /** Общая блокировка ручного и автоматического импорта; запись цен остаётся в CsvImportService. */
@@ -20,11 +23,14 @@ public class RosstatImportCoordinator {
     private final ImportFailureJournal failures;
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    @LogOperation(value = "rosstat.import.manual", level = Level.INFO)
     public RosstatWeeklyImportService.ImportResult importRange(LocalDate from, LocalDate to) {
         return run(() -> importer.importRange(from, to));
     }
 
     @Transactional
+    @LogOperation(value = "rosstat.import.scheduled", level = Level.INFO)
     public RosstatWeeklyImportService.ImportResult importRecent() {
         return run(importer::importNewPublications);
     }
