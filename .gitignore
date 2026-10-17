@@ -3,7 +3,6 @@ README-template.md
 AGENTS.md
 target/
 !**/src/main/**/target/
-!**/src/test/**/target/
 data
 docs
 postman
