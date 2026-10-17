@@ -84,7 +84,7 @@ ServiceOil помогает сравнивать цены на дизельно�
 Перед первым запуском создайте `.env` из шаблона:
 
 ```powershell
-Copy-Item .env.example .env
+cp .env.example .env
 ```
 
 Запустите проект из его корневой папки:
