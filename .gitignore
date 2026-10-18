@@ -3,7 +3,9 @@ AGENTS.md
 target/
 !**/src/main/**/target/
 **/src/test
-data
+data/*
+!data/initial-prices.csv
+!data/USAGE.md
 docs
 postman
 reports
@@ -46,3 +48,4 @@ build/
 !.env.example
 *.log
 logs/
+/scripts/export-initial-data.ps1

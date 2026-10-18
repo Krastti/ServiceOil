@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import ru.krastti.entity.dto.Source;
 import ru.krastti.service.CsvImportService;
 
-/** Одноразовый импорт поставляемого CSV для контейнера import; обычный веб-запуск данных не загружает. */
+/** Явный импорт CSV через import.file; в этом режиме автозагрузка начального снимка пропускается. */
 @Configuration
 @ConditionalOnProperty(name = "import.file")
 public class CsvImportConfiguration {
