@@ -48,3 +48,4 @@ build/
 !.env.example
 *.log
 logs/
+/scripts/export-initial-data.ps1
