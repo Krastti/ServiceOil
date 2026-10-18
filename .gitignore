@@ -3,7 +3,9 @@ AGENTS.md
 target/
 !**/src/main/**/target/
 **/src/test
-data
+data/*
+!data/initial-prices.csv
+!data/USAGE.md
 docs
 postman
 reports

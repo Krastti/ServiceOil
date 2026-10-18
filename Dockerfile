@@ -3,6 +3,7 @@ FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /workspace
 COPY pom.xml ./
 COPY src/main ./src/main
+COPY data/initial-prices.csv ./data/initial-prices.csv
 RUN --mount=type=cache,target=/maven-cache \
     mvn -B -ntp -Dmaven.repo.local=/maven-cache -Dmaven.test.skip=true package \
     && mkdir -p /root/.m2/repository \

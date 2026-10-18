@@ -38,7 +38,7 @@ public class RosstatWeeklyImportService {
     private static final Pattern PUBLISHED_ON = Pattern.compile("_(\\d{2}-\\d{2}-\\d{4})\\.html$");
     private static final DateTimeFormatter PUBLISHED_DATE_FORMAT = DateTimeFormatter.ofPattern("dd-MM-uuuu");
     private static final String SOURCE_ID = "ROSSTAT_PFO_WEEKLY";
-    private static final Source SOURCE = new Source(
+    static final Source SOURCE = new Source(
             SOURCE_ID,
             "Росстат ПФО (недельные цены)",
             "OPEN_DATA",

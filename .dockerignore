@@ -10,6 +10,7 @@
 !src/**
 !data/
 !data/rosstat-regional.csv
+!data/initial-prices.csv
 !postman/
 !postman/specs/
 !postman/specs/serviceoil.openapi.yaml
